@@ -1,0 +1,20 @@
+%% title: Prefill versus decode
+flowchart LR
+    subgraph P["Prefill, once per request"]
+        direction TB
+        p1["N prompt tokens<br/>processed in parallel"] --> p2["large matrix-matrix multiplies<br/>weights reused N times"]
+        p2 --> p3["<b>compute-bound</b>"]
+    end
+    subgraph D["Decode, once per output token"]
+        direction TB
+        d1["1 new token per sequence"] --> d2["matrix-vector-like work<br/>reads all weights and the KV cache"]
+        d2 --> d3["<b>memory-bandwidth-bound</b>"]
+        d3 -->|"append one K and V, repeat"| d1
+    end
+    p3 -->|"KV cache handed over"| d1
+    P -.-> M1["Determines TTFT"]
+    D -.-> M2["Determines ITL and throughput"]
+    classDef hot fill:#fee2e2,stroke:#dc2626,color:#7f1d1d
+    classDef cool fill:#dbeafe,stroke:#2563eb,color:#1e3a8a
+    class p3 hot
+    class d3 cool

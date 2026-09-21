@@ -1,0 +1,29 @@
+%% title: Learning roadmap as a dependency graph
+flowchart TD
+    L0["<b>0 The problem</b><br/>tokens, TTFT, ITL, cost"]
+    L1["<b>1 The machine</b><br/>CPU host, GPU, memory hierarchy"]
+    L2["<b>2 The model</b><br/>transformer, attention, prefill vs decode"]
+    L3["<b>3 Why it is slow</b><br/>roofline, arithmetic intensity"]
+    L4["<b>4 Shrink it</b><br/>quantization, FlashAttention, fusion"]
+    L5["<b>5 Manage state</b><br/>KV cache, paging, prefix caching"]
+    L6["<b>6 Schedule</b><br/>continuous batching, chunked prefill, speculation"]
+    L7["<b>7 Scale out</b><br/>TP, PP, EP, CP, disaggregation"]
+    L8["<b>8 Engines</b><br/>vLLM, SGLang, TensorRT-LLM"]
+    L9["<b>9 Production</b><br/>routing, observability, cost"]
+    L0 --> L1
+    L0 --> L2
+    L1 --> L3
+    L2 --> L3
+    L2 --> L5
+    L3 --> L4
+    L3 --> L5
+    L4 --> L6
+    L5 --> L6
+    L6 --> L7
+    L6 --> L8
+    L7 --> L8
+    L8 --> L9
+    classDef live fill:#d1fae5,stroke:#059669,color:#064e3b
+    classDef planned fill:#f3f4f6,stroke:#9ca3af,color:#374151
+    class L0,L2,L3,L4,L5,L6 live
+    class L1,L7,L8,L9 planned

@@ -1,0 +1,16 @@
+cff-version: 1.2.0
+message: "If you use this curriculum or its code, please cite it as below and keep the MIT copyright notice."
+title: "Inference Engineering: how LLMs actually run, from transistors to tokens"
+type: software
+authors:
+  - family-names: "Arif"
+    given-names: "Akbar"
+license: MIT
+repository-code: "https://github.com/AkbarSheikh-debug/inference-engineering"
+date-released: "2026-09-21"
+keywords:
+  - llm inference
+  - gpu
+  - kv cache
+  - roofline
+  - education

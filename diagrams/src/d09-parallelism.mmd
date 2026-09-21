@@ -1,0 +1,14 @@
+%% title: Four ways to split a model across GPUs
+flowchart TB
+    subgraph TP["Tensor parallel: split each layer's matrices"]
+        t1["GPU 0<br/>half of every weight matrix"] <-->|"all-reduce, every layer"| t2["GPU 1<br/>the other half"]
+    end
+    subgraph PP["Pipeline parallel: split the layers into stages"]
+        p1["GPU 0<br/>first half of the layers"] -->|"activations"| p2["GPU 1<br/>second half of the layers"]
+    end
+    subgraph EP["Expert parallel: split the MoE experts"]
+        e1["GPU 0<br/>experts 0 to 3"] <-->|"all-to-all: route tokens"| e2["GPU 1<br/>experts 4 to 7"]
+    end
+    subgraph CP["Context parallel: split the sequence"]
+        c1["GPU 0<br/>first half of the tokens"] <-->|"exchange K and V"| c2["GPU 1<br/>second half of the tokens"]
+    end

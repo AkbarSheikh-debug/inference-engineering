@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 820 502" width="820" height="502" font-family="Segoe UI, Helvetica, Arial, sans-serif" role="img" aria-label="Static versus continuous batching schedule for seven requests on four slots">
+<rect x="0" y="0" width="820" height="502" rx="10" fill="#ffffff" stroke="#e5e7eb"/>
+<text x="410.0" y="28" font-size="16" font-weight="bold" fill="#1f2937" text-anchor="middle">Static versus continuous batching: 7 requests, 4 slots</text>
+<text x="20" y="62" font-size="14" font-weight="bold" fill="#1f2937">Static batching: 15 steps, slots busy 60%</text>
+<text x="80" y="96" font-size="12" fill="#6b7280" text-anchor="end">slot 1</text>
+<rect x="90" y="76" width="690" height="28" fill="#e5e7eb"/>
+<rect x="90" y="76" width="136" height="28" rx="3" fill="#2563eb"/>
+<text x="158.0" y="95" font-size="13" fill="#ffffff" text-anchor="middle" font-weight="bold">A (3)</text>
+<rect x="550" y="76" width="182" height="28" rx="3" fill="#2563eb"/>
+<text x="641.0" y="95" font-size="13" fill="#ffffff" text-anchor="middle" font-weight="bold">E (4)</text>
+<text x="80" y="130" font-size="12" fill="#6b7280" text-anchor="end">slot 2</text>
+<rect x="90" y="110" width="690" height="28" fill="#e5e7eb"/>
+<rect x="90" y="110" width="458" height="28" rx="3" fill="#2563eb"/>
+<text x="319.0" y="129" font-size="13" fill="#ffffff" text-anchor="middle" font-weight="bold">B (10)</text>
+<rect x="550" y="110" width="228" height="28" rx="3" fill="#2563eb"/>
+<text x="664.0" y="129" font-size="13" fill="#ffffff" text-anchor="middle" font-weight="bold">F (5)</text>
+<text x="80" y="164" font-size="12" fill="#6b7280" text-anchor="end">slot 3</text>
+<rect x="90" y="144" width="690" height="28" fill="#e5e7eb"/>
+<rect x="90" y="144" width="228" height="28" rx="3" fill="#2563eb"/>
+<text x="204.0" y="163" font-size="13" fill="#ffffff" text-anchor="middle" font-weight="bold">C (5)</text>
+<rect x="550" y="144" width="136" height="28" rx="3" fill="#2563eb"/>
+<text x="618.0" y="163" font-size="13" fill="#ffffff" text-anchor="middle" font-weight="bold">G (3)</text>
+<text x="80" y="198" font-size="12" fill="#6b7280" text-anchor="end">slot 4</text>
+<rect x="90" y="178" width="690" height="28" fill="#e5e7eb"/>
+<rect x="90" y="178" width="274" height="28" rx="3" fill="#2563eb"/>
+<text x="227.0" y="197" font-size="13" fill="#ffffff" text-anchor="middle" font-weight="bold">D (6)</text>
+<text x="90" y="228" font-size="11" fill="#6b7280" text-anchor="middle">0</text>
+<text x="320" y="228" font-size="11" fill="#6b7280" text-anchor="middle">5</text>
+<text x="550" y="228" font-size="11" fill="#6b7280" text-anchor="middle">10</text>
+<text x="780" y="228" font-size="11" fill="#6b7280" text-anchor="middle">15</text>
+<text x="435.0" y="244" font-size="11" fill="#6b7280" text-anchor="middle">decode steps</text>
+<text x="20" y="278" font-size="14" font-weight="bold" fill="#1f2937">Continuous batching: 10 steps, slots busy 90%</text>
+<text x="80" y="312" font-size="12" fill="#6b7280" text-anchor="end">slot 1</text>
+<rect x="90" y="292" width="460" height="28" fill="#e5e7eb"/>
+<rect x="90" y="292" width="136" height="28" rx="3" fill="#2563eb"/>
+<text x="158.0" y="311" font-size="13" fill="#ffffff" text-anchor="middle" font-weight="bold">A (3)</text>
+<rect x="228" y="292" width="182" height="28" rx="3" fill="#2563eb"/>
+<text x="319.0" y="311" font-size="13" fill="#ffffff" text-anchor="middle" font-weight="bold">E (4)</text>
+<text x="80" y="346" font-size="12" fill="#6b7280" text-anchor="end">slot 2</text>
+<rect x="90" y="326" width="460" height="28" fill="#e5e7eb"/>
+<rect x="90" y="326" width="458" height="28" rx="3" fill="#2563eb"/>
+<text x="319.0" y="345" font-size="13" fill="#ffffff" text-anchor="middle" font-weight="bold">B (10)</text>
+<text x="80" y="380" font-size="12" fill="#6b7280" text-anchor="end">slot 3</text>
+<rect x="90" y="360" width="460" height="28" fill="#e5e7eb"/>
+<rect x="90" y="360" width="228" height="28" rx="3" fill="#2563eb"/>
+<text x="204.0" y="379" font-size="13" fill="#ffffff" text-anchor="middle" font-weight="bold">C (5)</text>
+<rect x="320" y="360" width="228" height="28" rx="3" fill="#2563eb"/>
+<text x="434.0" y="379" font-size="13" fill="#ffffff" text-anchor="middle" font-weight="bold">F (5)</text>
+<text x="80" y="414" font-size="12" fill="#6b7280" text-anchor="end">slot 4</text>
+<rect x="90" y="394" width="460" height="28" fill="#e5e7eb"/>
+<rect x="90" y="394" width="274" height="28" rx="3" fill="#2563eb"/>
+<text x="227.0" y="413" font-size="13" fill="#ffffff" text-anchor="middle" font-weight="bold">D (6)</text>
+<rect x="366" y="394" width="136" height="28" rx="3" fill="#2563eb"/>
+<text x="434.0" y="413" font-size="13" fill="#ffffff" text-anchor="middle" font-weight="bold">G (3)</text>
+<text x="90" y="444" font-size="11" fill="#6b7280" text-anchor="middle">0</text>
+<text x="320" y="444" font-size="11" fill="#6b7280" text-anchor="middle">5</text>
+<text x="550" y="444" font-size="11" fill="#6b7280" text-anchor="middle">10</text>
+<text x="320.0" y="460" font-size="11" fill="#6b7280" text-anchor="middle">decode steps</text>
+<text x="20" y="490" font-size="12" fill="#6b7280">Blue: request running (decode steps). Grey: slot idle. Toy schedule with equal-cost steps.</text>
+</svg>

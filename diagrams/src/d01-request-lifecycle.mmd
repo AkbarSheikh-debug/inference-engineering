@@ -1,0 +1,23 @@
+%% title: Request lifecycle from prompt to streamed tokens
+sequenceDiagram
+    autonumber
+    participant C as Client
+    participant A as API server
+    participant S as Scheduler
+    participant G as GPU (weights and KV cache)
+    C->>A: prompt text
+    A->>A: tokenize into token ids
+    A->>S: enqueue request
+    S->>G: PREFILL, all prompt tokens in one pass
+    Note over G: compute-bound. Writes K and V for every prompt token
+    G-->>S: logits for the last position
+    S->>S: sample token 1
+    S-->>C: stream token 1 (time to first token ends here)
+    loop DECODE, once per output token
+        S->>G: the previous token id
+        Note over G: memory-bound. Reads all weights and the KV cache, appends one K and V
+        G-->>S: logits
+        S->>S: sample the next token
+        S-->>C: stream detokenized text
+    end
+    Note over S,G: stop at end-of-sequence or the token limit

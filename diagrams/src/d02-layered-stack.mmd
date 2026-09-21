@@ -1,0 +1,14 @@
+%% title: The five-layer inference stack
+flowchart TB
+    L5["<b>5 Product</b><br/>API, streaming, SLOs, cost per token<br/><i>limited by: the latency and cost trade-off</i>"]
+    L4["<b>4 Serving</b><br/>routing, admission, continuous batching, prefix cache, disaggregation<br/><i>limited by: scheduling and tail latency</i>"]
+    L3["<b>3 Engine</b><br/>vLLM, SGLang, TensorRT-LLM: KV memory manager, speculative decoding, graph capture<br/><i>limited by: memory management and launch overhead</i>"]
+    L2["<b>2 Model and kernels</b><br/>transformer, attention variants, quantization, fused kernels<br/><i>limited by: HBM bandwidth and compute</i>"]
+    L1["<b>1 Hardware</b><br/>SMs, registers, shared memory, L2, HBM, NVLink, CPU host<br/><i>limited by: bandwidth, capacity, interconnect</i>"]
+    L5 -->|"requests down"| L4
+    L4 --> L3
+    L3 --> L2
+    L2 --> L1
+    L1 -.->|"tokens up"| L5
+    classDef layer fill:#eff6ff,stroke:#3b82f6,color:#1e3a8a
+    class L5,L4,L3,L2,L1 layer

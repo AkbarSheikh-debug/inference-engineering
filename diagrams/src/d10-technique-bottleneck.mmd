@@ -1,0 +1,46 @@
+%% title: Technique by bottleneck
+flowchart LR
+    B1(["Memory bandwidth"])
+    B2(["Memory capacity"])
+    B3(["Compute"])
+    B4(["Launch overhead"])
+    B5(["Idle GPU and scheduling"])
+    B6(["Interconnect"])
+    T1["Quantization"]
+    T2["Batching"]
+    T3["Speculative decoding"]
+    T4["FlashAttention"]
+    T5["Kernel fusion"]
+    T6["GQA, MQA, MLA"]
+    T7["PagedAttention"]
+    T8["KV-cache quantization"]
+    T9["Tensor and pipeline parallelism"]
+    T10["FP8 and FP4 math"]
+    T11["Sparse attention"]
+    T12["Prefix caching"]
+    T13["KV cache"]
+    T14["CUDA graphs"]
+    T15["Continuous batching"]
+    T16["Chunked prefill"]
+    T17["Disaggregated serving"]
+    T18["Parallelism layout and overlap"]
+    B1 --> T1
+    B1 --> T2
+    B1 --> T3
+    B1 --> T4
+    B1 --> T5
+    B2 --> T1
+    B2 --> T6
+    B2 --> T7
+    B2 --> T8
+    B2 --> T9
+    B3 --> T10
+    B3 --> T11
+    B3 --> T12
+    B3 --> T13
+    B4 --> T5
+    B4 --> T14
+    B5 --> T15
+    B5 --> T16
+    B5 --> T17
+    B6 --> T18

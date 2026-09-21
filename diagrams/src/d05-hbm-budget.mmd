@@ -1,0 +1,19 @@
+%% title: Where GPU memory goes
+flowchart TB
+    HBM["<b>GPU HBM</b><br/>80 GiB on an H100 80GB"]
+    CAP["<b>Engine budget</b><br/>a utilisation cap, for example 90 percent"]
+    RES["<b>Headroom</b><br/>CUDA context, fragmentation, safety margin"]
+    W["<b>Weights</b><br/>fixed: parameters x bytes per parameter"]
+    ACT["<b>Activation workspace</b><br/>measured at startup"]
+    K["<b>KV cache pool</b><br/>everything left, cut into fixed-size blocks"]
+    S["Concurrent sequences =<br/>pool / (context x KV bytes per token)"]
+    HBM --> CAP
+    HBM --> RES
+    CAP --> W
+    CAP --> ACT
+    CAP --> K
+    K --> S
+    classDef fixed fill:#f3f4f6,stroke:#9ca3af,color:#374151
+    classDef flex fill:#d1fae5,stroke:#059669,color:#064e3b
+    class W,ACT,RES fixed
+    class K,S flex

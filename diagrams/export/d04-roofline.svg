@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 580" width="900" height="580" font-family="Segoe UI, Helvetica, Arial, sans-serif" role="img" aria-label="Roofline plot for A100 and H100 with LLM decode and prefill operating points">
+<rect x="0" y="0" width="900" height="580" rx="10" fill="#ffffff" stroke="#e5e7eb"/>
+<text x="450.0" y="30.0" font-size="17" fill="#1f2937" text-anchor="middle" font-weight="bold">Roofline: why batch-1 decode leaves the GPU almost idle</text>
+<line x1="100.0" y1="50" x2="100.0" y2="470" stroke="#e5e7eb"/>
+<text x="100.0" y="490.0" font-size="12" fill="#6b7280" text-anchor="middle" font-weight="normal">1</text>
+<line x1="290.0" y1="50" x2="290.0" y2="470" stroke="#e5e7eb"/>
+<text x="290.0" y="490.0" font-size="12" fill="#6b7280" text-anchor="middle" font-weight="normal">10</text>
+<line x1="480.0" y1="50" x2="480.0" y2="470" stroke="#e5e7eb"/>
+<text x="480.0" y="490.0" font-size="12" fill="#6b7280" text-anchor="middle" font-weight="normal">100</text>
+<line x1="670.0" y1="50" x2="670.0" y2="470" stroke="#e5e7eb"/>
+<text x="670.0" y="490.0" font-size="12" fill="#6b7280" text-anchor="middle" font-weight="normal">1,000</text>
+<line x1="860.0" y1="50" x2="860.0" y2="470" stroke="#e5e7eb"/>
+<text x="860.0" y="490.0" font-size="12" fill="#6b7280" text-anchor="middle" font-weight="normal">10,000</text>
+<line x1="100" y1="470.0" x2="860" y2="470.0" stroke="#e5e7eb"/>
+<text x="92.0" y="474.0" font-size="12" fill="#6b7280" text-anchor="end" font-weight="normal">1</text>
+<line x1="100" y1="330.0" x2="860" y2="330.0" stroke="#e5e7eb"/>
+<text x="92.0" y="334.0" font-size="12" fill="#6b7280" text-anchor="end" font-weight="normal">10</text>
+<line x1="100" y1="190.0" x2="860" y2="190.0" stroke="#e5e7eb"/>
+<text x="92.0" y="194.0" font-size="12" fill="#6b7280" text-anchor="end" font-weight="normal">100</text>
+<line x1="100" y1="50.0" x2="860" y2="50.0" stroke="#e5e7eb"/>
+<text x="92.0" y="54.0" font-size="12" fill="#6b7280" text-anchor="end" font-weight="normal">1,000</text>
+<text x="480.0" y="516.0" font-size="13" fill="#1f2937" text-anchor="middle" font-weight="normal">arithmetic intensity (FLOP per byte moved from HBM)</text>
+<text transform="translate(30,260) rotate(-90)" font-size="13" fill="#1f2937" text-anchor="middle">attainable performance (TFLOP/s, BF16 dense)</text>
+<polyline points="100.0,426.7 515.1,120.8 860.0,120.8" fill="none" stroke="#7c3aed" stroke-width="3" stroke-linejoin="round"/>
+<line x1="515.1" y1="120.8" x2="515.1" y2="470" stroke="#7c3aed" stroke-dasharray="4 4" stroke-width="1.5"/>
+<polyline points="100.0,396.5 569.3,50.7 860.0,50.7" fill="none" stroke="#0369a1" stroke-width="3" stroke-linejoin="round"/>
+<line x1="569.3" y1="50.7" x2="569.3" y2="470" stroke="#0369a1" stroke-dasharray="4 4" stroke-width="1.5"/>
+<text x="854.0" y="42.7" font-size="13" fill="#0369a1" text-anchor="end" font-weight="bold">H100: 989 TFLOP/s</text>
+<text x="854.0" y="138.8" font-size="13" fill="#7c3aed" text-anchor="end" font-weight="bold">A100: 312 TFLOP/s</text>
+<text x="575.3" y="462.0" font-size="12" fill="#0369a1" text-anchor="start" font-weight="normal">H100 ridge 295</text>
+<text x="509.1" y="462.0" font-size="12" fill="#7c3aed" text-anchor="end" font-weight="normal">A100 ridge 153</text>
+<text x="305.0" y="441.4" font-size="12" fill="#6b7280" text-anchor="start" font-weight="normal">slope = HBM bandwidth</text>
+<circle cx="100.0" cy="396.5" r="6" fill="#dc2626" stroke="#ffffff" stroke-width="2"/>
+<text x="112.0" y="420.5" font-size="12" fill="#991b1b" text-anchor="start" font-weight="normal">decode, batch 1: 0.3% of peak</text>
+<circle cx="328.8" cy="227.9" r="6" fill="#dc2626" stroke="#ffffff" stroke-width="2"/>
+<text x="340.8" y="253.9" font-size="12" fill="#991b1b" text-anchor="start" font-weight="normal">decode, batch 16: 5.4% of peak</text>
+<circle cx="443.2" cy="143.6" r="6" fill="#dc2626" stroke="#ffffff" stroke-width="2"/>
+<text x="453.2" y="169.6" font-size="12" fill="#991b1b" text-anchor="start" font-weight="normal">decode, batch 64: 21.7% of peak</text>
+<circle cx="729.2" cy="50.7" r="6" fill="#dc2626" stroke="#ffffff" stroke-width="2"/>
+<text x="729.2" y="78.7" font-size="12" fill="#991b1b" text-anchor="middle" font-weight="normal">prefill, 2,048 tokens: 100.0% of peak</text>
+<text x="100.0" y="544.0" font-size="12" fill="#6b7280" text-anchor="start" font-weight="normal">BF16 weights: intensity = batch size (2 FLOPs per token per weight, 2 bytes per weight). Points shown on the H100 roof.</text>
+<text x="100.0" y="564.0" font-size="12" fill="#6b7280" text-anchor="start" font-weight="normal">Roof slopes are HBM bandwidth: H100 3.35 TB/s, A100 2.039 TB/s. Datasheet peaks; real kernels reach a fraction.</text>
+</svg>
