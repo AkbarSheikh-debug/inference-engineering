@@ -77,27 +77,6 @@ def label_bars(ax, bars, fmt="{:.0f}", dy=0.0, fontsize=11):
         ax.text(b.get_x() + b.get_width() / 2, h + dy, fmt.format(h), ha="center", va="bottom", fontsize=fontsize, color=INK)
 
 
-def c00_cover():
-    fig = plt.figure(figsize=(10.4, 5.83), dpi=DPI, facecolor="#0b1220")
-    fig.text(0.06, 0.86, "Inside the Inference Machine", fontsize=34, fontweight="bold", color="white", va="top")
-    fig.text(0.06, 0.73, "How LLMs actually run on a GPU, from first principles", fontsize=16, color="#93c5fd", va="top")
-    step = decode_step(H100_80GB, LLAMA3_8B)
-    peak_share = H100_80GB.attainable(1.0) / H100_80GB.peak_bf16
-    stats = [(f"{peak_share:.1%}", "of an H100's arithmetic\nused by one decode step"),
-             (f"{step.seconds * 1e3:.1f} ms", "to read 16 GB of weights\nfor one token"),
-             (f"{kv_bytes_per_token(LLAMA3_8B) * 8192 / GiB:.0f} GiB", "of KV cache for one\n8K-token conversation")]
-    for i, (big, small) in enumerate(stats):
-        x = 0.06 + i * 0.31
-        fig.text(x, 0.50, big, fontsize=40, fontweight="bold", color="#fbbf24", va="top")
-        fig.text(x, 0.35, small, fontsize=13, color="white", va="top", linespacing=1.4)
-    fig.text(0.06, 0.08, "github.com/AkbarSheikh-debug/inference-engineering   |   datasheet arithmetic, not benchmarks",
-             fontsize=11, color="#9ca3af")
-    OUT.mkdir(parents=True, exist_ok=True)
-    fig.savefig(OUT / "c00-cover.png", facecolor=fig.get_facecolor())
-    plt.close(fig)
-    print("wrote blog/images/c00-cover.png")
-
-
 def c01_decode_ceilings():
     fig, ax = canvas()
     labels = ["BF16", "INT8", "INT4\n(group 128)"]
@@ -441,7 +420,7 @@ def c18_kv_crossover():
 
 
 def main() -> int:
-    for fn in (c00_cover, c01_decode_ceilings, c02_batch_scaling, c03_kv_bytes, c04_users_vs_context, c05_recompute,
+    for fn in (c01_decode_ceilings, c02_batch_scaling, c03_kv_bytes, c04_users_vs_context, c05_recompute,
                c06_weight_bytes, c07_granularity, c08_sym_vs_asym, c09_coalescing, c10_tiling, c11_flash,
                c12_speculative, c13_exactness, c14_batching, c15_paging, c16_hbm_budget, c17_prefill_vs_decode,
                c18_kv_crossover):
