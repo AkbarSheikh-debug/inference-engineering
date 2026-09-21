@@ -94,6 +94,7 @@ curriculum/   the articles
 diagrams/     Mermaid sources in src/, generated SVGs in export/, gallery in README.md
 labs/cpu/     runnable labs, one per idea
 src/ie/       the arithmetic: hardware, models, KV cache, roofline, quantization, batching, paging, GPU memory, attention, speculation
+blog/         a long-form post (Markdown and Substack-ready HTML) with 30 figures
 tests/        unit tests, plus checks that articles match the code
 tools/        diagram sync, figure generators, documentation checks
 papers.md     primary sources and the claims they support

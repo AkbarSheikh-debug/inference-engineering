@@ -43,6 +43,8 @@ python tools/syndicate.py           # writes dist/syndication/{devto,hashnode,hu
 
 Each output has Mermaid blocks swapped for images, repository-relative links made absolute, the front matter the platform expects, and a line pointing back to the canonical copy. Check each platform's current Markdown support before publishing (tables and images in particular), and set the canonical URL in its settings where it has one. For Medium, use its import-from-URL tool on the published site instead of pasting.
 
+The long-form post lives in `blog/`. Its 19 charts are drawn from the library by `python tools/make_blog_charts.py` (needs `pip install -e ".[blog]"`), and `python tools/blog_html.py` regenerates the Substack-ready HTML. A test fails if the HTML is stale, an image is missing, or a number in the post disagrees with the code.
+
 The documentation site is `index.html` plus `_sidebar.md`: docsify renders the repository's Markdown in the browser, so there is no build step. Preview it with `python -m http.server` from the repository root.
 
 ## Licensing of contributions
