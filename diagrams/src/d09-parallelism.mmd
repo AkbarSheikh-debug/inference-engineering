@@ -12,3 +12,6 @@ flowchart TB
     subgraph CP["Context parallel: split the sequence"]
         c1["GPU 0<br/>first half of the tokens"] <-->|"exchange K and V"| c2["GPU 1<br/>second half of the tokens"]
     end
+    TP ~~~ PP
+    PP ~~~ EP
+    EP ~~~ CP

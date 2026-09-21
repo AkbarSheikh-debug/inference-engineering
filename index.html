@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Inference Engineering</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="How large language models actually run on real hardware, built up from first principles. Runnable labs, tested numbers.">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/docsify@4/lib/themes/vue.css">
+  <style>
+    .markdown-section { max-width: 860px; }
+    .markdown-section table { display: table; width: 100%; }
+  </style>
+</head>
+<body>
+  <!-- Static site: docsify renders the repository's Markdown in the browser, so there is no build step. -->
+  <div id="app">Loading...</div>
+  <script>
+    window.$docsify = {
+      name: 'Inference Engineering',
+      repo: 'AkbarSheikh-debug/inference-engineering',
+      homepage: 'README.md',
+      loadSidebar: true,
+      subMaxLevel: 2,
+      auto2top: true,
+      relativePath: false,
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/docsify@4"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docsify-mermaid@2/dist/docsify-mermaid.js"></script>
+  <script>mermaid.initialize({ startOnLoad: false });</script>
+</body>
+</html>

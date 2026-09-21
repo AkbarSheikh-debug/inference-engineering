@@ -6,6 +6,10 @@ Most material on LLM inference is a list of techniques. This is a curriculum org
 
 > What happens between the moment you send a prompt and the moment the model produces its next token?
 
+**Read it online:** [akbarsheikh-debug.github.io/inference-engineering](https://akbarsheikh-debug.github.io/inference-engineering/)
+
+**Read it online:** [akbarsheikh-debug.github.io/inference-engineering](https://akbarsheikh-debug.github.io/inference-engineering/)
+
 ## Start here
 
 | | |
@@ -16,6 +20,9 @@ Most material on LLM inference is a list of techniques. This is a curriculum org
 | [03. Why the KV cache exists, and why it fills your GPU](curriculum/03-kv-cache.md) | Cache arithmetic, GQA and MLA, paging |
 | [04. Quantization: spending fewer bytes per number](curriculum/04-quantization.md) | Number formats, symmetric vs asymmetric, granularity, the straight-through estimator |
 | [05. Continuous batching: never let a finished request hold a seat](curriculum/05-continuous-batching.md) | Head-of-line blocking, iteration-level scheduling, chunked prefill, the two knobs |
+| [06. The GPU memory hierarchy](curriculum/06-gpu-memory-hierarchy.md) | Registers to HBM, coalescing and 32-byte sectors, shared-memory tiling |
+| [07. FlashAttention: exact attention without the n-by-n matrix](curriculum/07-flashattention.md) | Online softmax, why it is exact, what it saves and what it does not |
+| [08. Speculative decoding: more tokens per read of the weights](curriculum/08-speculative-decoding.md) | Accept/reject rule, the two-line exactness proof, expected speedup |
 
 <!-- diagram:start d00-roadmap-dag -->
 ```mermaid
@@ -46,8 +53,8 @@ flowchart TD
     L8 --> L9
     classDef live fill:#d1fae5,stroke:#059669,color:#064e3b
     classDef planned fill:#f3f4f6,stroke:#9ca3af,color:#374151
-    class L0,L2,L3,L4,L5,L6 live
-    class L1,L7,L8,L9 planned
+    class L0,L1,L2,L3,L4,L5,L6 live
+    class L7,L8,L9 planned
 ```
 <!-- diagram:end -->
 
@@ -68,6 +75,9 @@ python labs/cpu/02_kv_calculator.py     # KV bytes per token, sequences that fit
 python labs/cpu/03_paged_allocator.py   # contiguous slabs vs paged blocks
 python labs/cpu/04_quantization.py      # symmetric vs asymmetric, per-tensor vs per-channel vs group
 python labs/cpu/05_continuous_batching.py  # static vs continuous batching, token budgets
+python labs/cpu/06_gpu_memory.py        # coalescing efficiency, tiled matrix-multiply traffic
+python labs/cpu/07_flash_attention.py   # tiled attention is exact; traffic model
+python labs/cpu/08_speculative_decoding.py  # accept/reject rule, exactness, expected speedup
 pytest                                  # every number quoted in the articles is checked here
 ```
 
@@ -83,7 +93,7 @@ pytest                                  # every number quoted in the articles is
 curriculum/   the articles
 diagrams/     Mermaid sources in src/, generated SVGs in export/, gallery in README.md
 labs/cpu/     runnable labs, one per idea
-src/ie/       the arithmetic: hardware, models, KV cache, roofline, quantization, batching, paging
+src/ie/       the arithmetic: hardware, models, KV cache, roofline, quantization, batching, paging, GPU memory, attention, speculation
 tests/        unit tests, plus checks that articles match the code
 tools/        diagram sync, figure generators, documentation checks
 papers.md     primary sources and the claims they support

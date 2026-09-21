@@ -31,6 +31,20 @@ Edit the Mermaid source in `diagrams/src/`, then run `python tools/sync_diagrams
 
 A lab is a small script in `labs/cpu/` that prints its result, uses `src/ie/` for every spec and model constant, and has a test. It must run without a GPU.
 
+## Publishing an article elsewhere
+
+The repository is the source of truth. To post an article on another platform:
+
+```bash
+pip install -e ".[export]"
+python tools/export_diagrams.py     # Mermaid and SVG figures to PNG (needs Edge, Chrome or Chromium)
+python tools/syndicate.py           # writes dist/syndication/{devto,hashnode,huggingface}/
+```
+
+Each output has Mermaid blocks swapped for images, repository-relative links made absolute, the front matter the platform expects, and a line pointing back to the canonical copy. Check each platform's current Markdown support before publishing (tables and images in particular), and set the canonical URL in its settings where it has one. For Medium, use its import-from-URL tool on the published site instead of pasting.
+
+The documentation site is `index.html` plus `_sidebar.md`: docsify renders the repository's Markdown in the browser, so there is no build step. Preview it with `python -m http.server` from the repository root.
+
 ## Licensing of contributions
 
 By submitting a contribution you agree that it is licensed under the repository's [MIT License](LICENSE). Your commits keep your name and email in the git history, which is how GitHub credits you as a contributor.

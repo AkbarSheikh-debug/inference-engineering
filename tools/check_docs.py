@@ -29,7 +29,8 @@ def problems() -> list[str]:
             for target in LINK.findall(line):
                 if target.startswith(("http://", "https://", "#", "mailto:")):
                     continue
-                dest = (path.parent / target.split("#")[0]).resolve()
+                raw = target.split("#")[0]
+                dest = (ROOT / raw.lstrip("/") if raw.startswith("/") else path.parent / raw).resolve()
                 if not dest.exists():
                     found.append(f"{rel}:{n}: broken link {target}")
     return found

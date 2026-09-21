@@ -11,6 +11,9 @@ python labs/cpu/02_kv_calculator.py
 python labs/cpu/03_paged_allocator.py
 python labs/cpu/04_quantization.py
 python labs/cpu/05_continuous_batching.py
+python labs/cpu/06_gpu_memory.py
+python labs/cpu/07_flash_attention.py
+python labs/cpu/08_speculative_decoding.py
 ```
 
 | Lab | Companion article | What it shows |
@@ -21,6 +24,9 @@ python labs/cpu/05_continuous_batching.py
 | `03_paged_allocator.py` | [03](../curriculum/03-kv-cache.md) | Contiguous reservation vs paged blocks on synthetic requests |
 | `04_quantization.py` | [04](../curriculum/04-quantization.md) | One skewed row through both quantization rules, then a matrix at three granularities |
 | `05_continuous_batching.py` | [05](../curriculum/05-continuous-batching.md) | Static vs continuous schedules, the ten-second token example, a token budget |
+| `06_gpu_memory.py` | [06](../curriculum/06-gpu-memory-hierarchy.md) | Sectors touched by a warp as stride grows; tiled matrix-multiply traffic |
+| `07_flash_attention.py` | [07](../curriculum/07-flashattention.md) | Tiled attention equals direct attention to 1e-16; traffic and storage as n grows |
+| `08_speculative_decoding.py` | [08](../curriculum/08-speculative-decoding.md) | The accept/reject rule, a million-sample exactness check, expected speedup |
 
 Two rules apply to every lab. Hardware specs and model configs come from
 `src/ie/` and carry their sources. A lab that prints a *measurement* rather

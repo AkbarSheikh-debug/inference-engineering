@@ -68,8 +68,8 @@ flowchart TD
     L8 --> L9
     classDef live fill:#d1fae5,stroke:#059669,color:#064e3b
     classDef planned fill:#f3f4f6,stroke:#9ca3af,color:#374151
-    class L0,L2,L3,L4,L5,L6 live
-    class L1,L7,L8,L9 planned
+    class L0,L1,L2,L3,L4,L5,L6 live
+    class L7,L8,L9 planned
 ```
 <!-- diagram:end -->
 
@@ -78,12 +78,12 @@ flowchart TD
 | Level | Question | Topics | Status |
 |---|---|---|---|
 | 0 | What is the problem? | autoregression, tokens, TTFT, ITL, throughput, cost | [01](01-request-lifecycle.md) |
-| 1 | What is the machine? | CPU host, GPU, SMs, warps, registers, shared memory, L2, HBM, CUDA execution model | planned |
+| 1 | What is the machine? | CPU host, GPU, SMs, warps, registers, shared memory, L2, HBM, CUDA execution model | [06](06-gpu-memory-hierarchy.md) (memory hierarchy, coalescing, tiling); CPU host and the execution model planned |
 | 2 | What is the model doing? | forward pass, attention family (MHA, MQA, GQA, MLA), prefill vs decode | [01](01-request-lifecycle.md), [03](03-kv-cache.md) |
 | 3 | Why is it slow? | roofline, arithmetic intensity, memory-bound vs compute-bound | [02](02-why-decode-is-slow.md) |
-| 4 | How do we shrink it? | FP16/BF16/FP8/INT8/INT4/FP4, weight, activation and KV quantization, FlashAttention, kernel fusion | [04](04-quantization.md) (number formats, integer quantization); FlashAttention and fusion planned |
+| 4 | How do we shrink it? | FP16/BF16/FP8/INT8/INT4/FP4, weight, activation and KV quantization, FlashAttention, kernel fusion | [04](04-quantization.md) (number formats, integer quantization), [07](07-flashattention.md) (FlashAttention); kernel fusion planned |
 | 5 | How do we manage state? | KV cache arithmetic, PagedAttention, prefix caching | [03](03-kv-cache.md) |
-| 6 | How do we schedule? | continuous batching, chunked prefill, speculative decoding | [05](05-continuous-batching.md) (continuous batching, chunked prefill); speculative decoding planned |
+| 6 | How do we schedule? | continuous batching, chunked prefill, speculative decoding | [05](05-continuous-batching.md) (continuous batching, chunked prefill), [08](08-speculative-decoding.md) (speculative decoding) |
 | 7 | How do we scale out? | tensor, pipeline, expert and context parallelism, disaggregated prefill and decode | planned |
 | 8 | What runs it? | vLLM, SGLang, TensorRT-LLM, choosing an engine | planned |
 | 9 | How do we run it in production? | routing, cold starts, observability, cost per token, failure modes | planned |
@@ -93,9 +93,9 @@ flowchart TD
 | You are | Read in this order |
 |---|---|
 | An application engineer who calls an inference API | 01, 02, 04, 05, then level 9 |
-| A kernel or performance engineer | 02, 04, then level 1, then 03 |
+| A kernel or performance engineer | 02, 06, 07, 04, then 03 |
 | An infrastructure or platform engineer | 01, 03, 05, then levels 7, 8 and 9 |
-| A student starting from the transformer | 01 to 05 in order, then follow the graph |
+| A student starting from the transformer | 01 to 08 in order, then follow the graph |
 
 ## How every article is built
 

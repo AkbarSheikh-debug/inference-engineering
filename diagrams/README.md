@@ -35,8 +35,8 @@ flowchart TD
     L8 --> L9
     classDef live fill:#d1fae5,stroke:#059669,color:#064e3b
     classDef planned fill:#f3f4f6,stroke:#9ca3af,color:#374151
-    class L0,L2,L3,L4,L5,L6 live
-    class L1,L7,L8,L9 planned
+    class L0,L1,L2,L3,L4,L5,L6 live
+    class L7,L8,L9 planned
 ```
 <!-- diagram:end -->
 
@@ -153,7 +153,7 @@ flowchart TB
 <!-- diagram:start d06-head-sharing -->
 ```mermaid
 %% title: MHA, GQA, MQA and MLA: who shares which keys and values
-flowchart LR
+flowchart TB
     subgraph MHA["MHA: 4 KV heads, nothing shared"]
         a1["Q1"] --> ak1["K1 V1"]
         a2["Q2"] --> ak2["K2 V2"]
@@ -175,6 +175,9 @@ flowchart LR
     subgraph MLA["MLA: cache one small latent per token"]
         d1["Q1 to Q4"] --> dl["latent vector<br/>K and V are rebuilt from it"]
     end
+    MHA ~~~ GQA
+    GQA ~~~ MQA
+    MQA ~~~ MLA
 ```
 <!-- diagram:end -->
 
@@ -226,6 +229,9 @@ flowchart TB
     subgraph CP["Context parallel: split the sequence"]
         c1["GPU 0<br/>first half of the tokens"] <-->|"exchange K and V"| c2["GPU 1<br/>second half of the tokens"]
     end
+    TP ~~~ PP
+    PP ~~~ EP
+    EP ~~~ CP
 ```
 <!-- diagram:end -->
 

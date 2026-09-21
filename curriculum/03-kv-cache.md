@@ -76,7 +76,7 @@ The formula has a factor you can change: the number of KV heads. Multi-head atte
 <!-- diagram:start d06-head-sharing -->
 ```mermaid
 %% title: MHA, GQA, MQA and MLA: who shares which keys and values
-flowchart LR
+flowchart TB
     subgraph MHA["MHA: 4 KV heads, nothing shared"]
         a1["Q1"] --> ak1["K1 V1"]
         a2["Q2"] --> ak2["K2 V2"]
@@ -98,6 +98,9 @@ flowchart LR
     subgraph MLA["MLA: cache one small latent per token"]
         d1["Q1 to Q4"] --> dl["latent vector<br/>K and V are rebuilt from it"]
     end
+    MHA ~~~ GQA
+    GQA ~~~ MQA
+    MQA ~~~ MLA
 ```
 <!-- diagram:end -->
 

@@ -13,7 +13,7 @@ from ie.paging import compare_policies
 from ie.quant import bytes_per_param
 from ie.roofline import decode_step, ridge_batch, weight_intensity
 from ie.tinylm import TinyConfig, TinyLM
-from ie.units import GB, GiB, KiB, to_gib
+from ie.units import GB, GiB, KiB, MiB, to_gib
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -147,3 +147,67 @@ def test_article_05_schedule_window_and_budget():
     assert f"**{r['decode'] / 4096 * 100:.1f} percent**" in t
     assert f"{r['prefill']:,}" in t and f"**{r['spare']:,} tokens**" in t
     assert f"{max_sequences(H100, LLAMA3_8B, 8192)} sequences" in t
+
+
+def test_article_06_coalescing_and_tiling_tables():
+    from ie.gpumem import gemm_flops, gemm_intensity, gemm_read_bytes, warp_access
+
+    t = article("06-gpu-memory-hierarchy.md")
+    for stride in (4, 8, 16, 32, 64, 128, 256):
+        a = warp_access(stride)
+        line = f"| {stride} B | {a.sectors} | {a.useful_bytes} | {a.moved_bytes} | {a.efficiency:.1%} |"
+        assert line in t, line
+    assert f"{warp_access(128, elem_bytes=1).efficiency * 100:.3f} percent" in t
+    m = n = k = 4096
+    assert f"{gemm_flops(m, n, k) / 1e9:.1f} GFLOP" in t
+    labels = {1: "1 x 1 (no reuse)", 16: "16 x 16", 32: "32 x 32", 64: "64 x 64", 128: "128 x 128", 256: "256 x 256"}
+    for tile, label in labels.items():
+        reads = gemm_read_bytes(m, n, k, tile, tile, 2) / GiB
+        row = f"| {label} | {reads:.3f} GiB | {gemm_intensity(m, n, k, tile, tile, 2):.1f} |"
+        assert row in t, row
+    assert warp_access(12).sectors == 12  # check-yourself question 1 has a definite answer
+
+
+def test_article_07_trace_traffic_and_blocks():
+    from ie.attention import (flash_attention, hbm_elements_flash, hbm_elements_standard, naive_attention,
+                              online_softmax_state, score_matrix_bytes)
+
+    t = article("07-flashattention.md")
+    (m1, l1, _), (m2, l2, alpha) = online_softmax_state([[0.515, 0.385, 0.405, 0.435], [0.560, 0.300, 0.370, 0.320]])
+    for s in (f"{m1:.3f}", f"{l1:.3f}", f"{m2:.3f}", f"{l2:.3f}", f"{alpha:.3f}"):
+        assert s in t, s
+    for n in (1024, 4096, 16384, 65536):
+        std, fl = hbm_elements_standard(n, 128) * 2 / MiB, hbm_elements_flash(n, 128, 128) * 2 / MiB
+        row = f"| {n:,} | {std:,.0f} | {fl:,.0f} | {std / fl:.2f} | {score_matrix_bytes(n) / GiB:.2f} |"
+        assert row in t, row
+    assert f"{score_matrix_bytes(65536) / GiB:.0f} GiB" in t and f"{score_matrix_bytes(32768, heads=32) / GiB:.0f} GiB" in t
+    rng = np.random.default_rng(0)
+    q, k, v = (rng.normal(size=(200, 32)) for _ in range(3))
+    ref = naive_attention(q, k, v)
+    for bq, bkv, block_text in ((64, 64, "4,096 of 40,000"), (37, 29, "1,073 of 40,000"),
+                                (200, 200, "40,000 of 40,000"), (7, 3, "21 of 40,000")):
+        out, largest = flash_attention(q, k, v, bq, bkv)
+        assert np.max(np.abs(out - ref)) < 1e-12
+        assert block_text in t and largest == bq * bkv
+
+
+def test_article_08_worked_example_and_speedup_table():
+    from ie.speculative import expected_tokens, residual_distribution, speedup
+
+    t = article("08-speculative-decoding.md")
+    p = np.array([0.45, 0.22, 0.15, 0.08, 0.10])
+    q = np.array([0.10, 0.08, 0.12, 0.30, 0.40])
+    res, z = residual_distribution(p, q)
+    assert f"Z = {z:.2f}" in t
+    for name, r in zip(("sunny", "warm", "cloudy"), res):
+        assert f"*{name}* {r:.3f}" in t, name
+    assert f"{0.08 / 0.30:.3f}" in t
+    assert f"{np.minimum(p, q).sum() * 100:.1f} percent" in t
+    for alpha in (0.5, 0.7, 0.9):
+        for k in (1, 4, 8):
+            row = f"| {alpha} | {k} | {expected_tokens(alpha, k):.3f} | {speedup(alpha, k, 0.05):.2f} |"
+            assert row in t, row
+    assert f"about {speedup(0.3, 8, 0.3):.2f}" in t
+    one, five = decode_step(H100, LLAMA3_8B, batch=1), decode_step(H100, LLAMA3_8B, batch=5)
+    assert one.bound == five.bound == "memory" and one.seconds == five.seconds
+    assert f"{one.seconds * 1e3:.2f} ms" in t

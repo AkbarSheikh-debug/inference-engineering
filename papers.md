@@ -17,6 +17,12 @@ Each source is listed with the claim in this repository that rests on it. If you
 | Frantar et al., *GPTQ: Accurate Post-Training Quantization for Generative Pre-trained Transformers*, 2022. arXiv:2210.17323 | Accuracy-preserving 4-bit weight quantization |
 | Lin et al., *AWQ: Activation-aware Weight Quantization for LLM Compression and Acceleration*, 2023. arXiv:2306.00978 | Protecting important weights under low-bit quantization |
 | Rouhani et al., *Microscaling Data Formats for Deep Learning*, 2023. arXiv:2310.10537 | Block-scaled low-bit formats |
+| Dao et al., *FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness*, NeurIPS 2022. arXiv:2205.14135 | Tiled exact attention; Theorem 2 on HBM accesses |
+| Milakov and Gimelshein, *Online normalizer calculation for softmax*, 2018. arXiv:1805.02867 | Online softmax |
+| Cai et al., *Medusa*, 2024. arXiv:2401.10774 | Extra decoding heads as a drafter |
+| Li et al., *EAGLE*, 2024. arXiv:2401.15077 | Feature-level autoregressive drafting |
+| NVIDIA, *A100 Tensor Core GPU Architecture* and *H100 Tensor Core GPU Architecture* whitepapers | SM counts, register file, L1/shared and L2 sizes |
+| NVIDIA, *CUDA C++ Best Practices Guide* | 32-byte sectors as the unit of a global-memory transaction |
 | Touvron et al., *Llama 2*, 2023. arXiv:2307.09288 | Llama-2-7B architecture |
 | Llama Team, *The Llama 3 Herd of Models*, 2024. arXiv:2407.21783 | Llama-3-8B and 70B architectures |
 | NVIDIA A100 80GB datasheet | A100 SXM bandwidth (2,039 GB/s) and dense BF16 throughput (312 TFLOP/s) |
