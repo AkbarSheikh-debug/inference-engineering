@@ -1,0 +1,2950 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FlashAttention 1–4 — Animated Theory</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:wght@500;700;800&family=Caveat:wght@500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<style>:root{
+  --bg:#f3f2ee; --paper:#fbfbf9; --ink:#1f2328; --muted:#6b7280; --line:#dedcd5;
+  --purple:#6d28d9; --purpleL:#ede6fb; --green:#15803d; --greenL:#e7f7ec; --red:#dc2626; --orange:#c2410c;
+  --say-size:19px; --side:280px;
+  --hand:"Caveat","Segoe Print",cursive; --mono:"JetBrains Mono",ui-monospace,Menlo,monospace;
+  --sans:"Atkinson Hyperlegible","Segoe UI",system-ui,sans-serif; --head:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:76px}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.55;
+  background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+  background-size:28px 28px;background-attachment:fixed;background-color:var(--bg)}
+body::before{content:"";position:fixed;inset:0;background:rgba(243,242,238,.82);z-index:-1}
+/* top bar */
+.topbar{position:fixed;top:0;left:0;right:0;height:60px;z-index:50;display:flex;align-items:center;gap:18px;padding:0 18px;
+  background:rgba(255,255,255,.92);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.brand{font-family:var(--head);font-weight:800;font-size:18px;display:flex;align-items:center;gap:10px;white-space:nowrap}
+.brand em{font-style:normal;font-weight:500;color:var(--muted);font-size:14px}
+.logo{display:inline-grid;place-items:center;width:34px;height:34px;border-radius:9px;background:var(--purple);color:#fff;font-size:14px}
+.menu{display:none;border:0;background:none;font-size:22px;cursor:pointer}
+.modes{margin-left:auto;display:flex;background:#f1f0eb;border-radius:999px;padding:3px}
+.modes button,.fsz button{border:0;background:none;padding:7px 14px;border-radius:999px;font:600 13px var(--sans);cursor:pointer;color:var(--muted)}
+.modes button.on{background:#fff;color:var(--purple);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.fsz{display:flex;gap:2px}
+.fsz button{background:#f1f0eb}
+.progress{position:absolute;left:0;right:0;bottom:-1px;height:3px}
+.progress i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--purple),var(--green))}
+/* sidebar */
+.side{position:fixed;top:60px;bottom:0;left:0;width:var(--side);overflow-y:auto;padding:16px 10px 40px;border-right:1px solid var(--line);background:rgba(251,251,249,.94);z-index:40}
+.side a{display:flex;gap:10px;align-items:baseline;padding:7px 10px;border-radius:9px;text-decoration:none;color:var(--ink);font-size:14px;line-height:1.3}
+.side a b{font-family:var(--head);font-size:12px;color:var(--purple);min-width:46px;white-space:nowrap}
+.side a.nav-sub{padding-left:26px;font-size:13px;color:var(--muted)}
+.side a.nav-sub b{min-width:30px;color:var(--muted)}
+.side a:hover{background:#f1f0eb}
+.side a.on{background:var(--purpleL)}
+main{margin-left:var(--side);padding:84px 40px 80px}
+main>section,.foot{max-width:1120px;margin:0 auto}
+/* hero */
+.hero{padding:30px 0 10px}
+.hero-kicker{font:700 13px var(--sans);letter-spacing:.08em;text-transform:uppercase;color:var(--green)}
+.hero h1{font-family:var(--head);font-weight:800;font-size:64px;line-height:1.02;margin:8px 0 6px;letter-spacing:-.02em}
+.hero-sub{font-family:var(--hand);font-size:34px;color:var(--purple);margin:0 0 22px;font-weight:600}
+.hero-meta{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:22px}
+.hero-meta div{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 16px;font-size:15px}
+.hero-meta b{display:block;font-family:var(--head);color:var(--purple);font-size:13px;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+.legend{display:grid;grid-template-columns:1fr 1fr 1.2fr;gap:14px;margin-bottom:18px;align-items:stretch}
+.legend .mini{margin:0}
+.stage-mini{background:#fff;border:2px solid var(--ink);border-radius:14px;padding:14px 16px;font-size:14px}
+.stage-mini b{display:block;font:800 12px var(--head);letter-spacing:.08em;text-transform:uppercase;color:var(--orange);margin-bottom:4px}
+kbd{font:700 12px var(--mono);background:#f1f0eb;border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:1px 6px}
+details.before{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 18px;margin:10px 0}
+details.before summary{cursor:pointer;font:700 16px var(--head)}
+/* parts */
+.part{padding-top:36px}
+.part-head{display:flex;align-items:baseline;gap:16px;flex-wrap:wrap;border-bottom:3px solid var(--ink);padding-bottom:10px;margin-bottom:20px}
+.part-num{font:800 14px var(--head);background:var(--purple);color:#fff;padding:5px 12px;border-radius:999px;letter-spacing:.04em}
+.part-head h2{font-family:var(--head);font-weight:800;font-size:34px;margin:0;line-height:1.15;flex:1;min-width:300px;letter-spacing:-.01em}
+.dur{color:var(--muted);font-size:14px}
+h3.sub{font-family:var(--head);font-size:24px;margin:38px 0 14px;display:flex;gap:12px;align-items:baseline}
+h3.sub span{font-size:15px;color:#fff;background:var(--green);padding:3px 10px;border-radius:8px}
+/* SAY */
+.say{background:#fff;border:1px solid var(--line);border-left:6px solid var(--purple);border-radius:14px;padding:16px 26px 8px;margin:18px 0;box-shadow:0 1px 0 rgba(0,0,0,.03)}
+.lbl{font:800 12px var(--head);letter-spacing:.12em;color:var(--purple);margin-bottom:6px;display:flex;align-items:center;gap:10px}
+.lbl span{font:600 12px var(--sans);letter-spacing:0;color:var(--muted);text-transform:none}
+.say-body{font-size:var(--say-size);line-height:1.68;max-width:78ch}
+.say-body p{margin:0 0 .85em}
+.say-body strong{color:var(--purple)}
+.direction{color:var(--muted);font-style:italic;font-size:.88em}
+/* BOARD */
+.board{position:relative;border:2px dashed var(--green);border-radius:14px;padding:16px 22px;margin:18px 0;
+  background-color:#fdfefc;background-image:linear-gradient(#e9efe9 1px,transparent 1px),linear-gradient(90deg,#e9efe9 1px,transparent 1px);background-size:22px 22px}
+.board>.lbl{color:var(--green)}
+.board p,.board li{font-size:17px}
+.board-pre{font:15px/1.5 var(--mono);background:rgba(255,255,255,.85);border:1px solid #dfe8df;border-radius:10px;padding:14px 16px;overflow-x:auto;margin:10px 0;color:#14301d}
+.math-block{background:rgba(255,255,255,.9);border:1px solid #dfe8df;border-radius:10px;padding:10px 14px;margin:10px 0;overflow-x:auto;font:15px var(--mono);color:var(--purple)}
+.math-block .katex{color:#3b1a78;font-size:1.25em}
+table{border-collapse:collapse;width:100%;margin:10px 0;background:#fff;border-radius:10px;overflow:hidden;font-size:15px}
+th,td{border:1px solid #e3e1da;padding:8px 12px;text-align:left;vertical-align:top}
+th{background:#f4f1fb;font-family:var(--head)}
+code{font-family:var(--mono);font-size:.86em;background:#f1f0eb;padding:1px 5px;border-radius:5px}
+.note{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 22px;margin:14px 0;font-size:16px}
+.code-card{background:#16141f;color:#e9e6f5;border-radius:14px;margin:18px 0;overflow:hidden}
+.code-card .lbl{color:#c4b5fd;padding:12px 18px;margin:0;border-bottom:1px solid #2c2838}
+.code-card .lbl span{color:#a19cb3}
+.code-card .copy{margin-left:auto;border:1px solid #4b4560;background:#221f2e;color:#e9e6f5;border-radius:8px;padding:5px 12px;cursor:pointer;font:600 12px var(--sans)}
+.code-card pre{margin:0;padding:16px 18px;overflow-x:auto}
+.code-card code{background:none;color:inherit;font-size:13.5px;line-height:1.55;padding:0}
+/* stage */
+.stage{background:#fff;border:2px solid var(--ink);border-radius:18px;margin:22px 0;overflow:hidden;box-shadow:6px 6px 0 rgba(31,35,40,.08);transition:box-shadow .2s}
+.stage.active{box-shadow:6px 6px 0 rgba(109,40,217,.25);border-color:var(--purple)}
+.stage-head{display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:1px solid var(--line)}
+.stage-tag{font:800 11px var(--head);letter-spacing:.1em;text-transform:uppercase;color:#fff;background:var(--orange);padding:3px 9px;border-radius:6px}
+.stage-title{font:700 17px var(--head)}
+.stage-keys{margin-left:auto;font-size:12px;color:var(--muted)}
+.cv-wrap{width:100%;position:relative;background:#f5f5f2}
+.cv-wrap canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.caption{display:flex;gap:14px;align-items:baseline;padding:12px 18px;border-top:1px solid var(--line);background:#fcfbff}
+.cap-n{font:800 12px var(--head);color:var(--purple);white-space:nowrap;letter-spacing:.04em}
+.cap-t{font-size:17px;font-weight:700}
+.controls{display:flex;align-items:center;gap:8px;padding:10px 16px;border-top:1px solid var(--line);flex-wrap:wrap}
+.controls button,.extra button{border:1.5px solid var(--ink);background:#fff;border-radius:999px;padding:6px 14px;font:700 13px var(--sans);cursor:pointer}
+.controls button:hover,.extra button:hover{background:#f4f1fb}
+.controls button.primary{background:var(--purple);border-color:var(--purple);color:#fff}
+.dots{display:flex;gap:5px;margin:0 8px}
+.dot{width:12px;height:12px;padding:0!important;border-radius:50%!important;border:1.5px solid var(--purple)!important;background:#fff!important}
+.dot.on{background:var(--purple)!important}
+.spd{margin-left:auto;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.spd input{width:90px}
+.extra{display:flex;gap:18px;flex-wrap:wrap;align-items:center;padding:10px 16px;border-top:1px solid var(--line);background:#faf9f6}
+.ctl{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700}
+.ctl output{font:700 13px var(--mono);color:var(--purple);min-width:56px}
+.ctl select{font:600 13px var(--sans);padding:4px 6px;border-radius:8px}
+.bench-panel{width:100%}
+.bench-cfg{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:10px}
+.bench-cfg label{display:flex;flex-direction:column;font-size:11px;font-weight:700;color:var(--muted)}
+.bench-cfg input{font:13px var(--mono);padding:5px 7px;border:1px solid var(--line);border-radius:7px}
+.bench-csv{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.bench-csv label{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:700;color:var(--muted)}
+.bench-csv textarea{font:12.5px var(--mono);padding:8px;border:1px solid var(--line);border-radius:8px;resize:vertical}
+.bench-note{font-size:12px;color:var(--muted);margin:8px 0 0}
+.stage:fullscreen{display:flex;flex-direction:column;border:0;border-radius:0;background:#f5f5f2;box-shadow:none}
+.stage:fullscreen .cv-wrap{flex:1;aspect-ratio:auto!important;min-height:0}
+.stage:fullscreen .cap-t{font-size:24px}
+.stage:fullscreen .stage-title{font-size:20px}
+/* modes */
+body.m-anim .say,body.m-anim .board,body.m-anim .note,body.m-anim .code-card{display:none}
+body.m-theory .stage{display:none}
+.foot{color:var(--muted);font-size:13px;padding:40px 0 0;text-align:center}
+@media (max-width:1100px){
+  .side{transform:translateX(-100%);transition:transform .2s}
+  body.nav-open .side{transform:none}
+  main{margin-left:0;padding:80px 18px}
+  .menu{display:block}
+  .brand em,.stage-keys{display:none}
+  .hero-meta,.legend{grid-template-columns:1fr}
+  .bench-cfg{grid-template-columns:repeat(2,1fr)}
+  .bench-csv{grid-template-columns:1fr}
+}
+@media (max-width:720px){ .modes button{padding:6px 8px;font-size:11px} .hero h1{font-size:44px} .fsz{display:none} }
+</style>
+</head>
+<body>
+<header class="topbar">
+  <button class="menu" aria-label="Toggle contents">☰</button>
+  <div class="brand"><span class="logo">FA</span> FlashAttention 1 → 4 <em>animated theory guide</em></div>
+  <div class="modes" role="group" aria-label="View">
+    <button data-mode="both" class="on">Theory + animations</button>
+    <button data-mode="anim">Animations only</button>
+    <button data-mode="theory">Theory only</button>
+  </div>
+  <div class="fsz"><button data-f="-1" title="Smaller theory text">A−</button><button data-f="1" title="Larger theory text">A+</button></div>
+  <div class="progress"><i></i></div>
+</header>
+<nav class="side">
+  <a href="#top" data-target="top"><b>Start</b><span>Before you record</span></a>
+  <a href="#part-1" data-target="part-1"><b>Part 1</b><span>The hook</span></a><a href="#part-2" data-target="part-2"><b>Part 2</b><span>Roofline</span></a><a href="#part-3" data-target="part-3"><b>Part 3</b><span>Inside the GPU</span></a><a href="#part-4" data-target="part-4"><b>Part 4</b><span>Standard attention</span></a><a href="#part-5" data-target="part-5"><b>Part 5</b><span>Tiling and fusion</span></a><a href="#part-6" data-target="part-6"><b>Part 6</b><span>Baseline: one query</span></a><a href="#part-7" data-target="part-7"><b>Part 7</b><span>Online softmax</span></a><a class="nav-sub" href="#sec-7-1" data-target="part-7"><b>7.1</b><span>Split the keys and values into tiles</span></a><a class="nav-sub" href="#sec-7-2" data-target="part-7"><b>7.2</b><span>Why independently normalising every tile is wrong</span></a><a class="nav-sub" href="#sec-7-3" data-target="part-7"><b>7.3</b><span>The simple online-softmax idea before numerical stability</span></a><a class="nav-sub" href="#sec-7-4" data-target="part-7"><b>7.4</b><span>Prove it with four numbers</span></a><a class="nav-sub" href="#sec-7-5" data-target="part-7"><b>7.5</b><span>Add the running maximum for numerical stability</span></a><a class="nav-sub" href="#sec-7-6" data-target="part-7"><b>7.6</b><span>Extend from one query to a query tile</span></a><a href="#part-8" data-target="part-8"><b>Part 8</b><span>Why tiling cuts HBM traffic</span></a><a href="#part-9" data-target="part-9"><b>Part 9</b><span>FA1 vs FA2: parallelism</span></a><a href="#part-10" data-target="part-10"><b>Part 10</b><span>FA3: overlap on Hopper</span></a><a href="#part-11" data-target="part-11"><b>Part 11</b><span>FA4: Blackwell redesign</span></a><a href="#part-12" data-target="part-12"><b>Part 12</b><span>Benchmarks and real use</span></a><a class="nav-sub" href="#sec-12-1" data-target="part-12"><b>12.1</b><span>Set up a fair benchmark</span></a><a class="nav-sub" href="#sec-12-2" data-target="part-12"><b>12.2</b><span>Read the plots without overclaiming</span></a><a class="nav-sub" href="#sec-12-3" data-target="part-12"><b>12.3</b><span>What this means in practice</span></a><a class="nav-sub" href="#sec-12-4" data-target="part-12"><b>12.4</b><span>Decode and Flash-Decoding</span></a><a href="#part-13" data-target="part-13"><b>Part 13</b><span>Final recap</span></a><a href="#notes" data-target="notes"><b>Notes</b><span>Recording notes and technical checks</span></a>
+</nav>
+<main>
+<section class="hero" id="top">
+  <div class="hero-kicker">One long-form, whiteboard-led YouTube lecture</div>
+  <h1>FlashAttention 1–4</h1>
+  <p class="hero-sub">Same attention problem. Smarter data movement and execution.</p>
+  <div class="hero-meta">
+    <div><b>Audience</b>Developers and ML engineers who know basic neural networks, matrix multiplication and Transformer attention</div>
+    <div><b>Delivery</b>Conversational, technically careful, paced for live explanation</div>
+    <div><b>Toy example</b>16 tokens · head dimension 8 · K/V tile size 4</div>
+  </div>
+  <div class="legend">
+    <div class="say mini"><div class="lbl">THEORY</div><div class="say-body"><p>This guide presents the core idea behind FlashAttention: exact dense attention can be reorganized to reduce data movement and avoid storing the full attention matrix in high-bandwidth memory (HBM).</p></div></div>
+    <div class="board mini"><div class="lbl">WRITE ON THE BOARD</div><p>Copy these lines and diagrams onto your board.</p></div>
+    <div class="stage-mini"><b>Animation</b> Click it (or hover) then use <kbd>←</kbd> <kbd>→</kbd> to step, <kbd>P</kbd> play, <kbd>R</kbd> reset, <kbd>F</kbd> full screen. A presentation clicker that sends arrow keys works too.</div>
+  </div>
+  <details class="before"><summary>How to use this theory guide</summary><ul>
+<li>Use each <strong>THEORY</strong> section to understand the concept shown in the adjacent animation.</li>
+<li>Use the <strong>BOARD</strong> material as a compact reference for the equations and definitions.</li>
+<li>Pause at the marked checkpoints. Let the audience think before you reveal the answer.</li>
+<li>The toy example uses <strong>16 tokens, head dimension 8, and a key/value tile size of 4</strong>. Keep those numbers consistent throughout the derivation.</li>
+<li>The benchmark section leaves performance values to be filled from a real GPU run; crossover points depend on the tested setup.</li>
+</ul></details>
+  <details class="before"><summary>Important technical framing</summary><p>FlashAttention is an <strong>exact-attention algorithm in the algorithmic sense</strong>: it does not approximate attention by dropping tokens, using low-rank factors, or replacing the attention rule. However, GPU implementations use finite-precision arithmetic, and options such as FP8 or polynomial exponential approximations introduce numerical differences. Do not promise bit-for-bit equality with every conventional implementation.</p>
+<p>The full-attention arithmetic still scales quadratically with sequence length. FlashAttention primarily changes the <strong>I/O behaviour and intermediate-memory footprint</strong>, not the fundamental amount of pairwise attention work. Also, PyTorch's scaled dot-product attention chooses among several eligible backends; it does not guarantee that the FlashAttention backend is selected for every input.</p></details>
+</section>
+<section class="part" id="part-1"><header class="part-head"><div class="part-num">Part 1</div><h2>The hook: why is attention moving so much data?</h2><div class="dur">about 3–4 minutes</div></header>
+<div class="say"><div class="lbl">THEORY</div><div class="say-body"><p>Attention is mathematically simple, but its intermediate data can be expensive to move. FlashAttention focuses on execution order and memory traffic while preserving the dense attention rule.</p></div></div>
+<div class="stage" data-scene="hook"></div>
+<div class="board"><div class="lbl">WRITE ON THE BOARD</div><p>Write this large at the top:</p>
+<pre class="board-pre">FLASHATTENTION 1 → 2 → 3 → 4
+
+Same attention problem.
+Smarter data movement and execution.</pre>
+<p>Add a small notation key:</p>
+<table>
+<thead>
+<tr>
+<th>Symbol</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>N</code></td>
+<td>Sequence length / number of tokens</td>
+</tr>
+<tr>
+<td><code>d</code></td>
+<td>Head dimension</td>
+</tr>
+<tr>
+<td><code>Q</code>, <code>K</code>, <code>V</code></td>
+<td>Query, key, and value matrices, each <code>N × d</code> for one head</td>
+</tr>
+<tr>
+<td><code>S</code></td>
+<td>Attention score matrix, shape <code>N × N</code></td>
+</tr>
+<tr>
+<td><code>P</code></td>
+<td>Row-wise softmax of <code>S</code>, also <code>N × N</code></td>
+</tr>
+<tr>
+<td><code>O</code></td>
+<td>Attention output, shape <code>N × d</code></td>
+</tr>
+<tr>
+<td><code>M</code></td>
+<td>Available fast on-chip memory, measured here in scalar elements</td>
+</tr>
+<tr>
+<td>HBM</td>
+<td>Off-chip high-bandwidth GPU memory</td>
+</tr>
+<tr>
+<td>SRAM / shared memory</td>
+<td>Fast, on-chip storage managed by the kernel</td>
+</tr>
+</tbody>
+</table>
+<p>Leave the middle of the board empty for the <code>Q</code>, <code>K</code>, and <code>V</code> example later.</p></div>
+</section><section class="part" id="part-2"><header class="part-head"><div class="part-num">Part 2</div><h2>The roofline: arithmetic is only half the story</h2><div class="dur">about 4 minutes</div></header>
+<div class="say"><div class="lbl">THEORY</div><div class="say-body"><p>Arithmetic intensity is the ratio of useful operations to bytes moved. A workload with low arithmetic intensity can be limited by memory bandwidth even when the GPU has substantial compute capacity.</p></div></div>
+<div class="stage" data-scene="roofline"></div>
+<div class="board"><div class="lbl">WRITE ON THE BOARD</div><pre class="board-pre">Achieved FLOPs/sec
+       ^
+       |                 ______________  Compute-bound
+       |               /
+       |             /
+       |           /       Memory-bound
+       |         /
+       |_______/____________________________&gt; FLOPs / byte
+                      Arithmetic intensity</pre>
+<p>Under the graph:</p>
+<div class="math-block">\[\text{Arithmetic intensity} = \frac{\text{FLOPs performed}}{\text{bytes transferred}}\]</div>
+<p>Label the low-intensity region <code>memory-bound</code> and the flat region <code>compute-bound</code>.</p></div>
+<div class="say"><div class="lbl">THEORY <span>transition</span></div><div class="say-body"><p>Reusing data while it remains in fast on-chip memory reduces transfers from HBM. Tiling raises this reuse and can improve the balance between computation and memory traffic.</p></div></div>
+</section><section class="part" id="part-3"><header class="part-head"><div class="part-num">Part 3</div><h2>Inside the GPU: SMs, registers, shared memory, L2, and HBM</h2><div class="dur">about 6–7 minutes</div></header>
+<div class="say"><div class="lbl">THEORY</div><div class="say-body"><p>A GPU provides a memory hierarchy: registers are fastest and private to a thread, shared memory is on-chip and shared within a block, L2 is a larger cache, and HBM is large but slower to access. Efficient kernels manage movement across these levels.</p></div></div>
+<div class="stage" data-scene="gpu"></div>
+<div class="board"><div class="lbl">WRITE ON THE BOARD</div><p>Draw a hierarchy with four levels:</p>
+<pre class="board-pre">        PER-THREAD REGISTERS
+       fastest / smallest
+                ↓
+       SHARED MEMORY (SMEM)
+        on-chip tile workspace
+                ↓
+          L1 / L2 CACHES
+        hardware-managed caching
+                ↓
+            HBM / VRAM
+        largest / off-chip memory</pre>
+<p>Beside the drawing, sketch one SM with:</p>
+<ul>
+<li>CUDA cores</li>
+<li>Tensor cores</li>
+<li>Registers</li>
+<li>Shared memory</li>
+<li>L1 cache</li>
+</ul>
+<p>Then draw multiple SM boxes connected to a shared L2 and HBM block.</p>
+<p>Add:</p>
+<pre class="board-pre">H100 SXM: 132 SMs
+H100 shared-memory maximum: up to 228 KB per SM</pre>
+<p>Small note: <code>L1 cache ≠ shared memory</code>, even though NVIDIA's hardware combines their resource allocation in the SM.</p></div>
+</section><section class="part" id="part-4"><header class="part-head"><div class="part-num">Part 4</div><h2>Standard attention: follow the intermediate matrices</h2><div class="dur">about 6–7 minutes</div></header>
+<div class="say"><div class="lbl">THEORY</div><div class="say-body"><p>For one attention head, scores are computed as QKᵀ/√d, probabilities are softmax of those scores, and the output is the probability matrix multiplied by V. The score and probability matrices can each have N×N elements.</p></div></div>
+<div class="stage" data-scene="standard"></div>
+<div class="board"><div class="lbl">WRITE ON THE BOARD</div><p>Write the standard attention equations:</p>
+<div class="math-block">\[S = \frac{QK^T}{\sqrt{d}}\]</div>
+<div class="math-block">\[P = \operatorname{softmax}(S) \quad \text{(row-wise)}\]</div>
+<div class="math-block">\[O = PV\]</div>
+<p>Add the shapes:</p>
+<pre class="board-pre">Q: N × d       Kᵀ: d × N       S: N × N
+P: N × N       V: N × d       O: N × d</pre>
+<p>Draw two columns: <code>HBM</code> and <code>GPU compute</code>. Add the four large transfers:</p>
+<pre class="board-pre">write S:  N × N
+read  S:  N × N
+write P:  N × N
+read  P:  N × N</pre>
+<p>Then calculate:</p>
+<pre class="board-pre">N = 4096, 2 bytes / element
+4096 × 4096 × 2 = 32 MiB per N × N matrix
+
+Illustrative materialised path:
+S write + S read + P write + P read
+= 4 × 32 MiB = 128 MiB
+per head, per layer (excluding Q/K/V/O)</pre>
+<p>Box this question:</p>
+<pre class="board-pre">Can we compute O without writing S and P to HBM?</pre></div>
+<div class="say"><div class="lbl">THEORY <span>audience pause</span></div><div class="say-body"><p>The full score and probability matrices are temporary intermediates. The final output can be computed without materializing them in HBM by processing score tiles and maintaining a compact softmax state.</p></div></div>
+</section><section class="part" id="part-5"><header class="part-head"><div class="part-num">Part 5</div><h2>The central idea: tiling and fusion</h2><div class="dur">about 4–5 minutes</div></header>
+<div class="say"><div class="lbl">THEORY</div><div class="say-body"><p>Tiling divides the query, key, and value matrices into blocks. Fusion combines score computation, softmax updates, and value accumulation so intermediate tiles can be consumed on chip.</p></div></div>
+<div class="stage" data-scene="tiling"></div>
+<div class="board"><div class="lbl">WRITE ON THE BOARD</div><pre class="board-pre">FLASHATTENTION CORE IDEA
+
+1. Split Q, K, V into tiles.
+2. Move only the required tiles into fast on-chip memory.
+3. Compute score tiles and consume them immediately.
+4. Maintain running softmax statistics and output accumulators.
+5. Write the final O tile to HBM.
+
+Full N × N S and P are not materialised in HBM.</pre>
+<p>Draw:</p>
+<pre class="board-pre">HBM:       Q     K     V
+            \    |    /
+             \\  |  //     load tiles
+              \ | /
+               v
+          ON-CHIP WORKSPACE
+       Q tile + K tile + V tile
+         score → softmax update
+            → output accumulator
+               |
+               v
+HBM:       final O tile</pre></div>
+</section><section class="part" id="part-6"><header class="part-head"><div class="part-num">Part 6</div><h2>Build the baseline with one query</h2><div class="dur">about 6–7 minutes</div></header>
+<div class="say"><div class="lbl">THEORY</div><div class="say-body"><p>A single query row provides a simple derivation: compute its scores against keys, normalize them with softmax, then use the probabilities to form a weighted sum of values.</p></div></div>
+<div class="stage" data-scene="baseline"></div>
+<div class="board"><div class="lbl">WRITE ON THE BOARD</div><p>Draw three 16-by-8 grids:</p>
+<pre class="board-pre">Q (16 × 8)       K (16 × 8)       V (16 × 8)
+q1               K1               V1
+q2               K2               V2
+...              ...              ...
+q16              K16              V16</pre>
+<p>Underneath, write:</p>
+<div class="math-block">\[s_i = \frac{q_1 \cdot k_i}{\sqrt{d}}, \qquad i=1,\ldots,16\]</div>
+<div class="math-block">\[w_i = \frac{e^{s_i}}{\sum_{j=1}^{16}e^{s_j}}\]</div>
+<div class="math-block">\[O_1 = \sum_{i=1}^{16} w_i V_i
+\qquad \text{shape: } (1\times16)(16\times8)=1\times8\]</div>
+<p>Add a small note:</p>
+<div class="math-block">\[\text{For numerical stability: subtract the row maximum before exponentiation.}\]</div></div>
+<div class="say"><div class="lbl">THEORY <span>transition</span></div><div class="say-body"><p>Softmax normalizes each score by the sum of exponentials across every key. Computing a separate softmax for each tile changes the denominator and therefore does not reproduce full attention.</p></div></div>
+</section><section class="part" id="part-7"><header class="part-head"><div class="part-num">Part 7</div><h2>Online softmax: the mathematical heart of FlashAttention</h2><div class="dur">about 14–17 minutes</div></header>
+<h3 class="sub" id="sec-7-1"><span>7.1</span> Split the keys and values into tiles</h3>
+<div class="say"><div class="lbl">THEORY</div><div class="say-body"><p>Partition the keys and values into tiles. Each tile contributes exponentiated scores to a shared normalization denominator and contributes a correspondingly weighted sum of values.</p></div></div>
+<div class="stage" data-scene="tiles"></div>
+<div class="board"><div class="lbl">WRITE ON THE BOARD</div><pre class="board-pre">K/V tiles, each containing 4 tokens
+
+Tile 1: K1–K4       V1–V4
+Tile 2: K5–K8       V5–V8
+Tile 3: K9–K12      V9–V12
+Tile 4: K13–K16     V13–V16</pre>
+<p>Show the score blocks:</p>
+<pre class="board-pre">q1 × K1:K4     → [s1  s2  s3  s4]
+q1 × K5:K8     → [s5  s6  s7  s8]
+q1 × K9:K12    → [s9  s10 s11 s12]
+q1 × K13:K16   → [s13 s14 s15 s16]</pre></div>
+<h3 class="sub" id="sec-7-2"><span>7.2</span> Why independently normalising every tile is wrong</h3>
+<div class="say"><div class="lbl">THEORY</div><div class="say-body"><p>Independent tile outputs cannot simply be averaged or concatenated. Their local denominators differ, so each tile must be rescaled to a common normalization before the partial results are combined.</p></div></div>
+<div class="stage" data-scene="wrongavg"></div>
+<div class="board"><div class="lbl">WRITE ON THE BOARD</div><p>Write:</p>
+<div class="math-block">\[\text{Tile output} = \frac{\text{tile numerator}}{\text{tile denominator}}\]</div>
+<p>Then:</p>
+<pre class="board-pre">Do NOT do this:
+O = O_tile1 + O_tile2 + O_tile3 + O_tile4</pre>
+<p>Cross it out and write:</p>
+<pre class="board-pre">Keep each tile&#x27;s numerator and denominator.
+Combine first. Divide once at the end.</pre></div>
+<h3 class="sub" id="sec-7-3"><span>7.3</span> The simple online-softmax idea before numerical stability</h3>
+<div class="say"><div class="lbl">THEORY</div><div class="say-body"><p>For a tile, let l be the sum of its exponentiated scores and u the weighted sum of its value vectors. When a later tile arrives, rescale the previous l and u to the new score range, then add the new tile contribution.</p></div></div>
+<div class="stage" data-scene="sumcombine"></div>
+<div class="board"><div class="lbl">WRITE ON THE BOARD</div><div class="math-block">\[L_j = \sum_{i\in\text{tile }j}e^{s_i}\]</div>
+<div class="math-block">\[U_j = \sum_{i\in\text{tile }j}e^{s_i}V_i\]</div>
+<div class="math-block">\[O_j = U_j/L_j\]</div>
+<p>Then accumulate:</p>
+<div class="math-block">\[U = U_1+U_2+U_3+U_4\]</div>
+<div class="math-block">\[L = L_1+L_2+L_3+L_4\]</div>
+<div class="math-block">\[O_1 = U/L\]</div>
+<p>Circle <code>U</code> and <code>L</code>.</p></div>
+<h3 class="sub" id="sec-7-4"><span>7.4</span> Prove it with four numbers</h3>
+<div class="say"><div class="lbl">THEORY</div><div class="say-body"><p>A small numerical example makes the rescaling visible: if two tiles have total exponential weights 4 and 6 and weighted-value sums 20 and 90, the combined result is (20 + 90)/(4 + 6) = 11. The tile outputs must be combined by their weights.</p></div></div>
+<div class="stage" data-scene="fournum"></div>
+<div class="board"><div class="lbl">WRITE ON THE BOARD</div><table>
+<thead>
+<tr>
+<th></th>
+<th style="text-align: right;">Tile 1</th>
+<th style="text-align: right;">Tile 2</th>
+<th style="text-align: right;">Combined</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Exponentials</td>
+<td style="text-align: right;"><code>1, 2</code></td>
+<td style="text-align: right;"><code>3, 4</code></td>
+<td style="text-align: right;"><code>1, 2, 3, 4</code></td>
+</tr>
+<tr>
+<td>Values</td>
+<td style="text-align: right;"><code>10, 20</code></td>
+<td style="text-align: right;"><code>30, 40</code></td>
+<td style="text-align: right;"><code>10, 20, 30, 40</code></td>
+</tr>
+<tr>
+<td>Denominator</td>
+<td style="text-align: right;"><code>3</code></td>
+<td style="text-align: right;"><code>7</code></td>
+<td style="text-align: right;"><code>3 + 7 = 10</code></td>
+</tr>
+<tr>
+<td>Numerator</td>
+<td style="text-align: right;"><code>50</code></td>
+<td style="text-align: right;"><code>250</code></td>
+<td style="text-align: right;"><code>50 + 250 = 300</code></td>
+</tr>
+<tr>
+<td>Local output</td>
+<td style="text-align: right;"><code>16.7</code></td>
+<td style="text-align: right;"><code>35.7</code></td>
+<td style="text-align: right;">Do not average</td>
+</tr>
+<tr>
+<td>Final result</td>
+<td style="text-align: right;"></td>
+<td style="text-align: right;"></td>
+<td style="text-align: right;"><strong><code>300 / 10 = 30</code></strong></td>
+</tr>
+</tbody>
+</table>
+<p>Cross out <code>average of local outputs</code> and tick <code>300 / 10 = 30</code>.</p></div>
+<h3 class="sub" id="sec-7-5"><span>7.5</span> Add the running maximum for numerical stability</h3>
+<div class="say"><div class="lbl">THEORY</div><div class="say-body"><p>Subtracting the maximum score before exponentiation prevents overflow and improves numerical stability. Track the running maximum m, denominator l, and weighted numerator u; when m increases, rescale the earlier l and u by exp(old_m − new_m).</p></div></div>
+<div class="stage" data-scene="runmax"></div>
+<div class="board"><div class="lbl">WRITE ON THE BOARD</div><p>Define the score tile <code>S_j</code> for one query row. Write:</p>
+<div class="math-block">\[m_{new}=\max\left(m_{old},\ \max(S_j)\right)\]</div>
+<div class="math-block">\[\alpha=e^{m_{old}-m_{new}}\]</div>
+<div class="math-block">\[P_j=e^{S_j-m_{new}}\]</div>
+<div class="math-block">\[l_{new}=\alpha l_{old}+\operatorname{rowsum}(P_j)\]</div>
+<div class="math-block">\[u_{new}=\alpha u_{old}+P_jV_j\]</div>
+<p>Final output:</p>
+<div class="math-block">\[O=\frac{u_{new}}{l_{new}}\]</div>
+<p>Initialise each row with:</p>
+<pre class="board-pre">m = -∞,   l = 0,   u = 0</pre>
+<p>Add a box:</p>
+<pre class="board-pre">Carried between key/value tiles:
+(m, l, u) — small row-wise state</pre></div>
+<h3 class="sub" id="sec-7-6"><span>7.6</span> Extend from one query to a query tile</h3>
+<div class="say"><div class="lbl">THEORY</div><div class="say-body"><p>The same recurrence applies to a block of query rows. Each row keeps its own running maximum, denominator, and output accumulator while key/value tiles are streamed through the block.</p></div></div>
+<div class="stage" data-scene="qtiles"></div>
+<div class="board"><div class="lbl">WRITE ON THE BOARD</div><pre class="board-pre">Query tile 1  ── process all K/V tiles ──&gt; output rows 1–4
+Query tile 2  ── process all K/V tiles ──&gt; output rows 5–8
+Query tile 3  ── process all K/V tiles ──&gt; output rows 9–12
+Query tile 4  ── process all K/V tiles ──&gt; output rows 13–16
+
+Final O: 16 × 8, written to HBM
+Full S:  16 × 16, never materialised in HBM
+Full P:  16 × 16, never materialised in HBM</pre></div>
+<div class="say"><div class="lbl">THEORY <span>checkpoint</span></div><div class="say-body"><p>The central online-softmax state is (m, l, u). It is sufficient to combine tiles exactly in real arithmetic and to recover each output row as u/l, subject to normal floating-point rounding.</p></div></div>
+</section><section class="part" id="part-8"><header class="part-head"><div class="part-num">Part 8</div><h2>Why tiling reduces HBM traffic</h2><div class="dur">about 6–8 minutes</div></header>
+<div class="say"><div class="lbl">THEORY</div><div class="say-body"><p>Tiling reduces HBM traffic because a query block and key/value tile are loaded and reused for matrix products before being evicted. The algorithm avoids writing and rereading the N×N score and probability matrices.</p></div></div>
+<div class="stage" data-scene="io"></div>
+<div class="board"><div class="lbl">WRITE ON THE BOARD</div><p>Define <code>B_r</code> as the number of query rows in one query tile:</p>
+<div class="math-block">\[\text{Number of query tiles}\approx\frac{N}{B_r}\]</div>
+<p>Simplified capacity relationship:</p>
+<div class="math-block">\[B_r=O\left(\frac{M}{d}\right)\]</div>
+<p>Therefore:</p>
+<div class="math-block">\[\text{K/V reads}\approx O(Nd)\times O\left(\frac{Nd}{M}\right)
+=O\left(\frac{N^2d^2}{M}\right)\]</div>
+<p>Total simplified I/O:</p>
+<div class="math-block">\[\text{FlashAttention I/O}=O\left(Nd+\frac{N^2d^2}{M}\right)\]</div>
+<p>Compare:</p>
+<div class="math-block">\[\text{Materialised attention I/O}=O(Nd+N^2)\]</div>
+<p>Add a prominent note:</p>
+<pre class="board-pre">Important: I/O complexity improves.
+Dense-attention arithmetic is still quadratic in N.</pre></div>
+<div class="say"><div class="lbl">THEORY <span>recap</span></div><div class="say-body"><p>FlashAttention 1 introduced an IO-aware exact-attention algorithm built from tiling, online softmax, and fused operations. Its main gain comes from reducing intermediate-memory traffic, not from reducing dense attention’s quadratic arithmetic count.</p></div></div>
+</section><section class="part" id="part-9"><header class="part-head"><div class="part-num">Part 9</div><h2>FlashAttention 1 versus FlashAttention 2: better parallelism</h2><div class="dur">about 8–9 minutes</div></header>
+<div class="say"><div class="lbl">THEORY</div><div class="say-body"><p>FlashAttention 2 reorganized work to expose more parallelism and improve GPU utilization. Its changes include partitioning work across query blocks, adjusting warp responsibilities, and reducing non-matrix operations.</p></div></div>
+<div class="stage" data-scene="fa2grid"></div>
+<div class="say"><div class="lbl">THEORY <span>continued</span></div><div class="say-body"><p>When query rows are divided into independent blocks, each block can compute its output separately. This provides parallel work across a sequence and avoids unnecessary coordination between blocks.</p></div></div>
+<div class="stage" data-scene="smutil"></div>
+<div class="say"><div class="lbl">THEORY <span>continued</span></div><div class="say-body"><p>Splitting work across key blocks can help when query parallelism is insufficient, but partial softmax states then need to be combined. The online-softmax recurrence provides a mathematically consistent merge.</p></div></div>
+<div class="board"><div class="lbl">WRITE ON THE BOARD</div><pre class="board-pre">FA1 — simplified loop organisation
+for each K/V tile:          # outer loop
+    for each Q tile:        # inner loop
+        update output state
+
+FA2 — simplified loop organisation
+for each Q tile:            # outer loop
+    for each K/V tile:      # inner loop
+        update this Q tile&#x27;s output state</pre>
+<p>Grid:</p>
+<pre class="board-pre">             Key / Value tiles
+             KV1   KV2   KV3   KV4
+Query Q1      ×     ×     ×     ×
+blocks Q2     ×     ×     ×     ×
+       Q3     ×     ×     ×     ×
+       Q4     ×     ×     ×     ×</pre>
+<p>Label FA1 <code>KV tiles outer</code> and FA2 <code>Q tiles outer</code>.</p>
+<p>Write:</p>
+<pre class="board-pre">FA1: remove full N × N HBM intermediates
+FA2: expose more independent Q-block work; improve warp partitioning</pre></div>
+<div class="say"><div class="lbl">THEORY <span>clarify prefill versus decode</span></div><div class="say-body"><p>The useful parallelization strategy depends on workload shape and hardware occupancy. More parallel tasks help only when there is not already enough independent work and when coordination costs remain manageable.</p></div></div>
+</section><section class="part" id="part-10"><header class="part-head"><div class="part-num">Part 10</div><h2>FlashAttention 3: overlap the work on Hopper</h2><div class="dur">about 9–11 minutes</div></header>
+<div class="say"><div class="lbl">THEORY</div><div class="say-body"><p>FlashAttention 3 targets Hopper GPUs by overlapping data movement, matrix multiplication, and softmax work. Its pipeline aims to keep specialized hardware units busy instead of waiting for each operation to finish before starting the next.</p></div></div>
+<div class="stage" data-scene="fa3pipe"></div>
+<div class="say"><div class="lbl">THEORY <span>continued</span></div><div class="say-body"><p>FP8 reduces data size and can increase throughput on supported hardware, but it changes numerical precision. Scaling, accumulation precision, and the input distribution affect accuracy and must be evaluated for the intended workload.</p></div></div>
+<div class="stage" data-scene="fp8"></div>
+<div class="say"><div class="lbl">THEORY <span>continued</span></div><div class="say-body"><p>FlashAttention 3 retains tiled attention and online softmax while adapting the schedule to Hopper features such as asynchronous transfers and warp specialization. The architectural schedule is the key change.</p></div></div>
+<div class="board"><div class="lbl">WRITE ON THE BOARD</div><p>Write the three main ideas:</p>
+<table>
+<thead>
+<tr>
+<th>Feature</th>
+<th>Role in the pipeline</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>TMA</td>
+<td>Asynchronous tensor-tile movement between global memory and shared memory</td>
+</tr>
+<tr>
+<td>WGMMA</td>
+<td>Warpgroup-level asynchronous matrix multiply-accumulate</td>
+</tr>
+<tr>
+<td>Warp specialisation</td>
+<td>Different warpgroups take producer / consumer / compute roles</td>
+</tr>
+</tbody>
+</table>
+<p>Draw the pipeline:</p>
+<pre class="board-pre">Time ───────────────────────────────────────────────&gt;
+
+TMA / producer:      load tile 1   load tile 2   load tile 3
+Tensor cores:              MMA 1        MMA 2        MMA 3
+Softmax group:                 softmax 0    softmax 1   softmax 2</pre>
+<p>Add:</p>
+<pre class="board-pre">The goal: overlap independent stages and reduce idle gaps.</pre>
+<p>Draw a FP8 outlier sketch:</p>
+<pre class="board-pre">Before mixing:      one very large coordinate dominates the scale
+After mixing:       information is spread across dimensions
+                    → FP8 quantisation can use its range more effectively</pre></div>
+<div class="say"><div class="lbl">THEORY <span>precision caveat</span></div><div class="say-body"><p>Algorithmically, FlashAttention computes dense attention without dropping tokens. Floating-point formats and approximations can still produce small numerical differences, so bitwise equality with another implementation is not guaranteed.</p></div></div>
+</section><section class="part" id="part-11"><header class="part-head"><div class="part-num">Part 11</div><h2>FlashAttention 4: Blackwell changes the bottleneck again</h2><div class="dur">about 11–13 minutes</div></header>
+<div class="say"><div class="lbl">THEORY</div><div class="say-body"><p>FlashAttention 4 is designed around Blackwell’s changed performance balance. As matrix multiplication accelerates, exponentials, memory movement, and synchronization can become more visible bottlenecks.</p></div></div>
+<div class="stage" data-scene="fa4scale"></div>
+<div class="say"><div class="lbl">THEORY <span>continued</span></div><div class="say-body"><p>Tensor Memory (TMEM) provides an on-chip destination for tensor-core results on Blackwell. Managing these results and their movement through the kernel is part of the new schedule.</p></div></div>
+<div class="stage" data-scene="fa4pipe"></div>
+<div class="say"><div class="lbl">THEORY <span>continued</span></div><div class="say-body"><p>Fast matrix multiplication can make exponential evaluation a limiting stage. FlashAttention 4 uses a software-assisted exponential method designed to reduce this bottleneck while controlling numerical error.</p></div></div>
+<div class="stage" data-scene="exp2"></div>
+<div class="say"><div class="lbl">THEORY <span>continued</span></div><div class="say-body"><p>Online softmax rescales accumulators when a larger score maximum appears. Conditional rescaling can avoid some unnecessary rescale work while preserving the required normalization logic.</p></div></div>
+<div class="stage" data-scene="rescale"></div>
+<div class="say"><div class="lbl">THEORY <span>continued</span></div><div class="say-body"><p>Two-CTA matrix multiplication lets a pair of thread blocks cooperate on a tile. In the backward pass, this can improve work distribution and reduce the cost of certain reductions.</p></div></div>
+<div class="stage" data-scene="twocta"></div>
+<div class="say"><div class="lbl">THEORY <span>continued</span></div><div class="say-body"><p>FlashAttention 4 uses CuTe-DSL to express low-level GPU operations and schedules. The implementation language helps map the algorithm onto Blackwell hardware; it does not change the attention definition.</p></div></div>
+<div class="board"><div class="lbl">WRITE ON THE BOARD</div><p>Start with a simplified comparison:</p>
+<table>
+<thead>
+<tr>
+<th>Resource</th>
+<th style="text-align: right;">Hopper comparison</th>
+<th style="text-align: right;">Blackwell B200 paper analysis</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>BF16 tensor-core throughput</td>
+<td style="text-align: right;">4,096 ops / clock / SM</td>
+<td style="text-align: right;">8,192 ops / clock / SM</td>
+</tr>
+<tr>
+<td>Exponential throughput</td>
+<td style="text-align: right;">16 ops / clock / SM</td>
+<td style="text-align: right;">16 ops / clock / SM</td>
+</tr>
+<tr>
+<td>Shared-memory read</td>
+<td style="text-align: right;">128 B / clock / SM</td>
+<td style="text-align: right;">128 B / clock / SM</td>
+</tr>
+<tr>
+<td>Tensor-core accumulator storage</td>
+<td style="text-align: right;">Registers</td>
+<td style="text-align: right;">TMEM, 256 KB / SM</td>
+</tr>
+</tbody>
+</table>
+<p>Mark the unchanged rows and write:</p>
+<pre class="board-pre">Matrix multiplication scaled faster than some supporting resources.
+The bottleneck moved.</pre>
+<p>Draw the FA4 forward pipeline:</p>
+<pre class="board-pre">TMA / MMA warpgroup  → produces score tiles in TMEM
+Softmax warpgroup A  → processes one tile
+Softmax warpgroup B  → processes the next tile
+Correction warpgroup → rescales accumulated output
+
+Ping-pong: overlap stages for different tiles.</pre>
+<p>Write the exponential decomposition:</p>
+<div class="math-block">\[2^x = 2^{\lfloor x\rfloor}\times 2^{x-\lfloor x\rfloor}\]</div>
+<p>Then label:</p>
+<pre class="board-pre">Integer part: exponent-field manipulation
+Fractional part: small polynomial + FMA
+Only a subset of exponentials use this software path.</pre>
+<p>Write the rescaling threshold:</p>
+<div class="math-block">\[\tau=8\text{ in log}_2\text{ units} \quad\Longleftrightarrow\quad 2^8=256\]</div>
+<p>For the backward pass, draw two CTAs sharing a matrix operation and staging parts of the operand.</p></div>
+<div class="say"><div class="lbl">THEORY <span>summary of FA4</span></div><div class="say-body"><p>FlashAttention 4 responds to Blackwell’s bottlenecks with a hardware-specific schedule involving TMEM, pipelining, efficient exponentials, softmax rescaling, and cooperative matrix multiplication.</p></div></div>
+</section><section class="part" id="part-12"><header class="part-head"><div class="part-num">Part 12</div><h2>Benchmarking and real-world usage: how to verify the story</h2><div class="dur">about 8–10 minutes</div></header>
+<h3 class="sub" id="sec-12-1"><span>12.1</span> Set up a fair benchmark</h3>
+<div class="say"><div class="lbl">THEORY</div><div class="say-body"><p>Performance claims require a controlled comparison: use the same GPU, shapes, data type, mask, and relevant settings; warm up each implementation; measure repeatedly; and report a clear statistic.</p></div></div>
+<div class="board"><div class="lbl">BOARD / SCREEN</div><p>Show the benchmark configuration before the plots:</p>
+<pre class="board-pre">GPU:                  [insert exact GPU model]
+Batch size:           [insert]
+Heads:                [insert]
+Sequence lengths:     [insert range]
+Head dimension:       [insert]
+Dtype:                [FP16 / BF16]
+Mask:                 [causal / non-causal]
+Warm-up iterations:   [insert]
+Measured iterations:  [insert]
+Statistic:            [median / mean]</pre></div>
+<div class="code-card"><div class="lbl">BENCHMARK CODE <span>run this before recording — it prints the CSV the plot below expects</span><button class="copy">Copy</button></div><pre><code>import torch
+import torch.nn.functional as F
+from torch.nn.attention import sdpa_kernel, SDPBackend
+
+def naive_attention(q, k, v, causal=False):
+    scale = q.shape[-1] ** -0.5
+    s = (q @ k.transpose(-2, -1)) * scale          # N x N scores (materialised)
+    if causal:
+        n = s.shape[-1]
+        future = torch.ones(n, n, dtype=torch.bool, device=s.device).triu(1)
+        s = s.masked_fill(future, float(&quot;-inf&quot;))
+    p = torch.softmax(s, dim=-1)                   # N x N probabilities (materialised)
+    return p @ v
+
+def flash_attention(q, k, v, causal=False):
+    # Require the FlashAttention backend: errors if these inputs are not eligible
+    with sdpa_kernel(SDPBackend.FLASH_ATTENTION):
+        return F.scaled_dot_product_attention(q, k, v, is_causal=causal)
+
+def median_ms(fn, q, k, v, warmup=10, iters=50):
+    for _ in range(warmup):
+        fn(q, k, v)
+    torch.cuda.synchronize()
+    times = []
+    for _ in range(iters):
+        start = torch.cuda.Event(enable_timing=True)
+        end = torch.cuda.Event(enable_timing=True)
+        start.record()
+        fn(q, k, v)
+        end.record()
+        torch.cuda.synchronize()
+        times.append(start.elapsed_time(end))
+    times.sort()
+    return times[len(times) // 2]
+
+def peak_mb(fn, q, k, v):
+    torch.cuda.synchronize()
+    torch.cuda.empty_cache()
+    torch.cuda.reset_peak_memory_stats()
+    base = torch.cuda.memory_allocated()
+    fn(q, k, v)
+    torch.cuda.synchronize()
+    return (torch.cuda.max_memory_allocated() - base) / 2**20   # allocated, NOT HBM traffic
+
+B, H, D, dtype = 1, 16, 128, torch.bfloat16
+print(&quot;seq_len,naive_ms,flash_ms,naive_mb,flash_mb&quot;)
+for N in [512, 1024, 2048, 4096, 8192]:
+    q, k, v = (torch.randn(B, H, N, D, device=&quot;cuda&quot;, dtype=dtype) for _ in range(3))
+    torch.testing.assert_close(naive_attention(q, k, v), flash_attention(q, k, v),
+                               atol=2e-2, rtol=2e-2)          # same attention, up to rounding
+    t_naive, t_flash = median_ms(naive_attention, q, k, v), median_ms(flash_attention, q, k, v)
+    m_naive, m_flash = peak_mb(naive_attention, q, k, v), peak_mb(flash_attention, q, k, v)
+    print(f&quot;{N},{t_naive:.3f},{t_flash:.3f},{m_naive:.1f},{m_flash:.1f}&quot;)
+</code></pre></div>
+<h3 class="sub" id="sec-12-2"><span>12.2</span> Read the plots without overclaiming</h3>
+<div class="say"><div class="lbl">THEORY</div><div class="say-body"><p>Latency generally increases with sequence length, while a materialized baseline also incurs large intermediate storage and traffic. Measured curves depend on hardware, kernel selection, batch size, and configuration; no single crossover point is universal.</p></div></div>
+<div class="stage" data-scene="benchplot"></div>
+<div class="board"><div class="lbl">BOARD / SCREEN</div><p>Use four plots if available:</p>
+<ol>
+<li>Latency vs sequence length</li>
+<li>Peak allocated memory vs sequence length</li>
+<li>Speed-up relative to the materialised baseline</li>
+<li>Throughput vs batch size</li>
+</ol>
+<p>Add a small note below the plots:</p>
+<pre class="board-pre">Report the measured result for this GPU and these shapes.
+Do not present one crossover point as universal.</pre></div>
+<h3 class="sub" id="sec-12-3"><span>12.3</span> What this means in practice</h3>
+<div class="say"><div class="lbl">THEORY</div><div class="say-body"><p>FlashAttention can reduce attention memory use and improve throughput in training and prompt prefill, but end-to-end benefit depends on the model, sequence lengths, batch size, and the rest of the system.</p></div></div>
+<div class="board"><div class="lbl">WRITE ON THE BOARD</div><pre class="board-pre">What FlashAttention can improve:
+✓ Avoid materialising full N × N score/probability matrices in HBM
+✓ Reduce attention intermediate-memory pressure
+✓ Reduce HBM I/O for suitable workloads
+✓ Improve prefill and training performance on supported shapes
+
+What it does NOT automatically do:
+✗ Make dense attention linear-time in N
+✗ Remove the KV cache
+✗ Guarantee a speedup for every sequence length and batch size
+✗ Guarantee PyTorch SDPA always selects the Flash backend</pre></div>
+<h3 class="sub" id="sec-12-4"><span>12.4</span> Decode and Flash-Decoding</h3>
+<div class="say"><div class="lbl">THEORY</div><div class="say-body"><p>During autoregressive decode, a new query may attend to a long key/value cache. Splitting the cache across workers creates parallel tasks; each worker computes a partial online-softmax state, and those states are merged before producing the output.</p></div></div>
+<div class="stage" data-scene="decode"></div>
+<div class="board"><div class="lbl">WRITE ON THE BOARD</div><pre class="board-pre">PREFILL:
+Many query rows → split work across query blocks
+
+DECODE:
+One/few query rows + long KV cache
+→ split KV cache into chunks
+→ compute partial (m, l, u)
+→ merge partial states
+→ final output</pre></div>
+</section><section class="part" id="part-13"><header class="part-head"><div class="part-num">Part 13</div><h2>Final recap: four generations, four bottleneck stories</h2><div class="dur">about 4–5 minutes</div></header>
+<div class="say"><div class="lbl">THEORY</div><div class="say-body"><p>The four generations address different bottlenecks: FlashAttention 1 reduces HBM traffic, FlashAttention 2 improves parallel work distribution, FlashAttention 3 overlaps operations on Hopper, and FlashAttention 4 adapts the schedule to Blackwell. The attention rule remains dense and exact in its algorithmic form.</p></div></div>
+<div class="stage" data-scene="recap"></div>
+<div class="board"><div class="lbl">WRITE ON THE BOARD <span>final comparison table</span></div><table>
+<thead>
+<tr>
+<th>Version</th>
+<th>Main bottleneck addressed</th>
+<th>Main idea</th>
+<th>Hardware focus</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>FA1</td>
+<td>Excessive HBM I/O and N×N intermediates</td>
+<td>Tiling + online softmax + fusion</td>
+<td>Original IO-aware attention approach</td>
+</tr>
+<tr>
+<td>FA2</td>
+<td>Insufficient parallelism / inefficient work partitioning</td>
+<td>More sequence parallelism + better warp work split</td>
+<td>Ampere-era optimisation and broader GPU support</td>
+</tr>
+<tr>
+<td>FA3</td>
+<td>Gaps between loads, matrix multiply, and softmax</td>
+<td>TMA + WGMMA + warp specialisation + FP8 techniques</td>
+<td>Hopper</td>
+</tr>
+<tr>
+<td>FA4</td>
+<td>Asymmetric scaling; softmax and shared-memory bottlenecks</td>
+<td>TMEM + pipelining + software-assisted exp + conditional rescaling + 2-CTA backward</td>
+<td>Blackwell</td>
+</tr>
+</tbody>
+</table>
+<p>Under the table, write:</p>
+<pre class="board-pre">Same attention problem.
+Different bottlenecks.
+Better algorithms and better schedules for the hardware.</pre>
+<p>Leave the board showing the online-softmax recurrence, the I/O-complexity comparison, and the four-generation summary.</p></div>
+</section><section class="part" id="notes"><header class="part-head"><div class="part-num">Notes</div><h2>Recording notes and technical checks</h2></header>
+<h3 class="sub">1. Claims to phrase carefully</h3>
+<div class="note"><ul>
+<li>Say <strong>"same mathematical attention, up to floating-point effects"</strong>, not "bit-for-bit identical". Different operation ordering, data types, and approximations can change low-order bits.</li>
+<li>Say <strong>"avoids materialising the full N×N score and probability matrices in HBM"</strong>, not "the N×N matrix never exists anywhere". Score tiles exist temporarily on chip.</li>
+<li>Say <strong>"reduces I/O and intermediate-memory requirements"</strong>, not "turns attention into linear-time attention". Dense full attention still has quadratic pairwise arithmetic in sequence length.</li>
+<li>Treat <code>M/d</code> as a simplified scaling relationship for tile capacity, not a production tile-size formula. Actual tile dimensions are hardware- and kernel-dependent.</li>
+<li>Keep H100's 228 KB maximum shared-memory capacity distinct from its 256 KB combined L1/shared-memory structure.</li>
+<li>Do not say PyTorch SDPA always selects FlashAttention. The backend is selected automatically from the implementations eligible for the current inputs and device.</li>
+<li>Report benchmark values from the run shown on screen. Don't use a fixed 500–1,000-token crossover or a universal speedup unless your own measured configuration supports it.</li>
+<li>Describe FP8 and polynomial exponentials as lower-precision / approximate numerical paths, not as bit-exact computations.</li>
+</ul></div>
+<h3 class="sub">2. Suggested references for the video description</h3>
+<div class="note"><ol>
+<li>Tri Dao et al., <strong>FlashAttention: Fast and Memory-Efficient Exact Attention with IO-Awareness</strong> (2022): https://arxiv.org/abs/2205.14135</li>
+<li>Tri Dao, <strong>FlashAttention-2: Faster Attention with Better Parallelism and Work Partitioning</strong> (2023): https://arxiv.org/abs/2307.08691</li>
+<li>Jay Shah et al., <strong>FlashAttention-3: Fast and Accurate Attention with Asynchrony and Low-precision</strong> (2024): https://arxiv.org/abs/2407.08608</li>
+<li>Ted Zadouri et al., <strong>FlashAttention-4: Algorithm and Kernel Pipelining Co-Design for Asymmetric Hardware Scaling</strong> (2026): https://arxiv.org/abs/2603.05451</li>
+<li>NVIDIA, <strong>Hopper Tuning Guide</strong>: https://docs.nvidia.com/cuda/hopper-tuning-guide/</li>
+<li>PyTorch, <strong>Scaled Dot Product Attention documentation</strong>: https://docs.pytorch.org/docs/stable/generated/torch.nn.functional.scaled_dot_product_attention.html</li>
+<li>PyTorch, <strong>SDPA backend selection documentation</strong>: https://docs.pytorch.org/docs/stable/nn.attention.html</li>
+<li>PyTorch, <strong>FlashAttention-3 technical overview</strong>: https://pytorch.org/blog/flashattention-3/</li>
+</ol>
+<p>Credit any workshop notes, diagrams, or teaching materials that informed your preparation, and distinguish those teaching resources from the original research papers.</p></div>
+<h3 class="sub">3. Final pre-recording checklist</h3>
+<div class="note"><ul>
+<li>Verify the GPU model and software versions used in the benchmark.</li>
+<li>Run the benchmark before recording and fill in the actual configuration table.</li>
+<li>Confirm that every plotted curve corresponds to the same shapes, dtype, mask, and warm-up policy.</li>
+<li>Avoid describing allocated memory as measured HBM traffic.</li>
+<li>Practise the online-softmax numerical example once without referring to the theory notes.</li>
+<li>Keep the board legible: the audience should be able to read <code>m</code>, <code>l</code>, and <code>u</code> while you explain the update.</li>
+</ul></div>
+</section>
+<footer class="foot">FlashAttention 1 → 4 · animated theory guide · numbers in the animations are computed live in this page from the toy example</footer>
+</main>
+<script>'use strict';
+/* =====================================================================
+   ENGINE — stage controller, drawing helpers, shared numeric data
+   ===================================================================== */
+const W = 1000;
+const C = {
+  bg: '#f5f5f2', grid: '#e6e6e1', ink: '#1f2328', muted: '#6b7280', faint: '#c9c9c4',
+  purple: '#6d28d9', purpleL: '#ede6fb', green: '#15803d', greenL: '#dcfce7',
+  red: '#dc2626', redL: '#fde2e2', blue: '#1d4ed8', blueL: '#dbe7ff',
+  orange: '#c2410c', orangeL: '#ffedd5', teal: '#0f766e', gold: '#b45309',
+  q: '#f8d3a9', k: '#f9c7cc', v: '#18b52c', hbm: '#ece7f8', sram: '#e8f6ec',
+  cellStroke: '#2a2a2a'
+};
+const TILE = ['#6d28d9', '#15803d', '#1d4ed8', '#c2410c'];
+const TILE_L = ['#ede6fb', '#dcfce7', '#dbe7ff', '#ffedd5'];
+const FONT = {
+  hand: '"Caveat", "Segoe Print", "Comic Sans MS", cursive',
+  mono: '"JetBrains Mono", ui-monospace, Menlo, Consolas, monospace',
+  sans: '"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif',
+  head: '"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif'
+};
+const clamp = (x, a = 0, b = 1) => Math.max(a, Math.min(b, x));
+const lerp = (a, b, t) => a + (b - a) * t;
+const ease = t => (t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+const easeOut = t => 1 - Math.pow(1 - t, 3);
+const seg = (p, a, b) => clamp((p - a) / (b - a));
+const fmt = (x, d = 2) => (x === -Infinity ? '−∞' : x === Infinity ? '∞' : (Math.abs(x) < 1e-12 ? 0 : x).toFixed(d).replace('-', '−'));
+const sum = a => a.reduce((s, x) => s + x, 0);
+const vadd = (a, b) => a.map((x, i) => x + b[i]);
+const vscale = (a, s) => a.map(x => x * s);
+
+/* ---------------- drawing helper ---------------- */
+class G {
+  constructor(ctx) { this.c = ctx; }
+  font(size, o = {}) { return `${o.italic ? 'italic ' : ''}${o.weight || 400} ${size}px ${o.font || FONT.sans}`; }
+  rect(x, y, w, h, o = {}) {
+    const c = this.c; c.beginPath();
+    if (o.r && c.roundRect) c.roundRect(x, y, w, h, o.r); else c.rect(x, y, w, h);
+    if (o.fill) { c.fillStyle = o.fill; c.fill(); }
+    if (o.stroke) { c.lineWidth = o.lw ?? 1.5; c.strokeStyle = o.stroke; c.setLineDash(o.dash || []); c.stroke(); c.setLineDash([]); }
+  }
+  circle(x, y, r, o = {}) {
+    const c = this.c; c.beginPath(); c.arc(x, y, r, 0, Math.PI * 2);
+    if (o.fill) { c.fillStyle = o.fill; c.fill(); }
+    if (o.stroke) { c.lineWidth = o.lw ?? 1.5; c.strokeStyle = o.stroke; c.setLineDash(o.dash || []); c.stroke(); c.setLineDash([]); }
+  }
+  ellipse(x, y, rx, ry, o = {}) {
+    const c = this.c; c.beginPath();
+    c.ellipse(x, y, rx, ry, o.rot || 0, o.a0 || 0, o.a1 ?? Math.PI * 2);
+    if (o.fill) { c.fillStyle = o.fill; c.fill(); }
+    if (o.stroke) { c.lineWidth = o.lw ?? 2; c.strokeStyle = o.stroke; c.stroke(); }
+  }
+  line(x1, y1, x2, y2, o = {}) {
+    const c = this.c; c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2);
+    c.lineWidth = o.lw ?? 1.5; c.strokeStyle = o.color || C.ink; c.setLineDash(o.dash || []);
+    c.lineCap = 'round'; c.stroke(); c.setLineDash([]);
+  }
+  poly(pts, o = {}) {
+    if (pts.length < 2) return;
+    const c = this.c; c.beginPath(); c.moveTo(pts[0][0], pts[0][1]);
+    for (let i = 1; i < pts.length; i++) c.lineTo(pts[i][0], pts[i][1]);
+    if (o.close) c.closePath();
+    if (o.fill) { c.fillStyle = o.fill; c.fill(); }
+    if (o.color !== null) { c.lineWidth = o.lw ?? 2; c.strokeStyle = o.color || C.ink; c.lineJoin = 'round'; c.setLineDash(o.dash || []); c.stroke(); c.setLineDash([]); }
+  }
+  head(x, y, ang, o = {}) {
+    const c = this.c, s = o.head || 9;
+    c.beginPath(); c.moveTo(x, y);
+    c.lineTo(x - s * Math.cos(ang - 0.42), y - s * Math.sin(ang - 0.42));
+    c.lineTo(x - s * Math.cos(ang + 0.42), y - s * Math.sin(ang + 0.42));
+    c.closePath(); c.fillStyle = o.color || C.ink; c.fill();
+  }
+  arrow(x1, y1, x2, y2, o = {}) {
+    const ang = Math.atan2(y2 - y1, x2 - x1), s = (o.head || 9) * 0.7;
+    this.line(x1, y1, x2 - s * Math.cos(ang), y2 - s * Math.sin(ang), o);
+    this.head(x2, y2, ang, o);
+    if (o.both) this.head(x1, y1, ang + Math.PI, o);
+  }
+  curve(x1, y1, cx, cy, x2, y2, o = {}) {
+    const c = this.c; c.beginPath(); c.moveTo(x1, y1); c.quadraticCurveTo(cx, cy, x2, y2);
+    c.lineWidth = o.lw ?? 1.8; c.strokeStyle = o.color || C.ink; c.setLineDash(o.dash || []); c.stroke(); c.setLineDash([]);
+    if (o.arrow !== false) this.head(x2, y2, Math.atan2(y2 - cy, x2 - cx), o);
+  }
+  text(s, x, y, o = {}) {
+    const c = this.c; c.font = this.font(o.size || 16, o);
+    c.fillStyle = o.color || C.ink; c.textAlign = o.align || 'left'; c.textBaseline = o.base || 'middle';
+    c.fillText(s, x, y);
+  }
+  hand(s, x, y, o = {}) { this.text(s, x, y, Object.assign({ font: FONT.hand, size: 26, color: C.purple, weight: 600 }, o)); }
+  mono(s, x, y, o = {}) { this.text(s, x, y, Object.assign({ font: FONT.mono, size: 13 }, o)); }
+  measure(s, o = {}) { this.c.font = this.font(o.size || 16, o); return this.c.measureText(s).width; }
+  wrap(s, x, y, maxW, lh, o = {}) {
+    const words = String(s).split(' '); let line = '', yy = y;
+    for (const w of words) {
+      const t = line ? line + ' ' + w : w;
+      if (this.measure(t, o) > maxW && line) { this.text(line, x, yy, o); line = w; yy += lh; } else line = t;
+    }
+    if (line) this.text(line, x, yy, o);
+    return yy + lh;
+  }
+  /* tiny TeX-like: base^{sup} base_{sub}; returns width */
+  runs(s, sc = 1, dy = 0) { // nested ^{...} / _{...}
+    const out = []; let i = 0, buf = '';
+    const flush = () => { if (buf) { out.push({ t: buf, sc, dy }); buf = ''; } };
+    while (i < s.length) {
+      const ch = s[i];
+      if ((ch === '^' || ch === '_') && i + 1 < s.length) {
+        flush(); let t;
+        if (s[i + 1] === '{') { let depth = 1, j = i + 2; while (j < s.length && depth) { if (s[j] === '{') depth++; else if (s[j] === '}') depth--; j++; } t = s.slice(i + 2, j - 1); i = j; }
+        else { t = s[i + 1]; i += 2; }
+        out.push(...this.runs(t, sc * 0.66, dy + (ch === '^' ? -0.42 : 0.25) * sc));
+      } else { buf += ch; i++; }
+    }
+    flush(); return out;
+  }
+  mathW(s, o = {}) {
+    const size = o.size || 22; let w = 0;
+    for (const r of this.runs(s)) w += this.measure(r.t, Object.assign({}, o, { size: size * r.sc }));
+    return w;
+  }
+  math(s, x, y, o = {}) {
+    const size = o.size || 22, oo = Object.assign({ font: FONT.hand, color: C.purple, weight: 600 }, o);
+    const w = this.mathW(s, oo); let xx = o.align === 'center' ? x - w / 2 : o.align === 'right' ? x - w : x;
+    for (const r of this.runs(s)) {
+      const sz = size * r.sc;
+      this.text(r.t, xx, y + r.dy * size, Object.assign({}, oo, { size: sz, align: 'left' }));
+      xx += this.measure(r.t, Object.assign({}, oo, { size: sz }));
+    }
+    return w;
+  }
+  frac(num, den, x, y, o = {}) {
+    const size = o.size || 22, oo = Object.assign({ font: FONT.hand, color: C.purple, weight: 600 }, o, { align: 'center' });
+    const w = Math.max(this.mathW(num, oo), this.mathW(den, oo)) + 6;
+    this.math(num, x, y - size * 0.55, oo);
+    this.line(x - w / 2, y, x + w / 2, y, { color: oo.color, lw: 1.6 });
+    this.math(den, x, y + size * 0.62, oo);
+    return w;
+  }
+  alpha(a, fn) { if (a <= 0.003) return; const c = this.c; c.save(); c.globalAlpha *= Math.min(1, a); fn(); c.restore(); }
+  matrix(x, y, R, Cc, o = {}) {
+    const cs = o.cs || 14, gp = o.gap ?? 3;
+    for (let r = 0; r < R; r++) for (let k = 0; k < Cc; k++) {
+      const f = typeof o.fill === 'function' ? o.fill(r, k) : o.fill;
+      if (f === null) continue;
+      const a = o.alpha ? o.alpha(r, k) : 1; if (a <= 0.003) continue;
+      this.alpha(a, () => this.rect(x + k * (cs + gp), y + r * (cs + gp), cs, cs, { fill: f || '#fff', stroke: o.stroke === undefined ? C.cellStroke : o.stroke, lw: o.lw ?? 1 }));
+    }
+    return { w: Cc * (cs + gp) - gp, h: R * (cs + gp) - gp, rx: r => y + r * (cs + gp), cx: k => x + k * (cs + gp), cs, gp };
+  }
+  vec(vals, x, y, o = {}) { // row of numeric cells
+    const cw = o.cw || 46, ch = o.ch || 26;
+    vals.forEach((v, i) => {
+      const fill = typeof o.fill === 'function' ? o.fill(i, v) : (o.fill || '#fff');
+      this.rect(x + i * cw, y, cw - 3, ch, { fill, stroke: o.stroke || C.ink, lw: 1, r: 3 });
+      this.mono(typeof v === 'string' ? v : fmt(v, o.d ?? 2), x + i * cw + (cw - 3) / 2, y + ch / 2 + 1, { align: 'center', size: o.size || 12, color: o.color || C.ink });
+    });
+    return cw * vals.length;
+  }
+  brace(x, y1, y2, o = {}) { // vertical brace opening to the right if dir=1
+    const d = o.dir || 1, w = (o.w || 10) * d, m = (y1 + y2) / 2, c = this.c;
+    c.beginPath(); c.moveTo(x, y1);
+    c.quadraticCurveTo(x + w, y1, x + w, y1 + 10);
+    c.lineTo(x + w, m - 8); c.quadraticCurveTo(x + w, m, x + 2 * w, m);
+    c.quadraticCurveTo(x + w, m, x + w, m + 8); c.lineTo(x + w, y2 - 10);
+    c.quadraticCurveTo(x + w, y2, x, y2);
+    c.lineWidth = o.lw ?? 2; c.strokeStyle = o.color || C.purple; c.stroke();
+  }
+  check(x, y, s, o = {}) { this.poly([[x - s * .5, y], [x - s * .15, y + s * .38], [x + s * .55, y - s * .45]], { color: o.color || C.green, lw: o.lw || 4 }); }
+  cross(x, y, s, o = {}) { const col = o.color || C.red, lw = o.lw || 4; this.line(x - s / 2, y - s / 2, x + s / 2, y + s / 2, { color: col, lw }); this.line(x + s / 2, y - s / 2, x - s / 2, y + s / 2, { color: col, lw }); }
+  pill(s, x, y, o = {}) {
+    const size = o.size || 13, w = this.measure(s, Object.assign({}, o, { size })) + 18, h = size + 12;
+    const xx = o.align === 'center' ? x - w / 2 : x;
+    this.rect(xx, y - h / 2, w, h, { fill: o.fill || '#fff', stroke: o.stroke || o.color || C.ink, lw: 1.3, r: h / 2 });
+    this.text(s, xx + w / 2, y + 1, Object.assign({}, o, { size, align: 'center' }));
+    return w;
+  }
+  box(x, y, w, h, title, o = {}) {
+    this.rect(x, y, w, h, { fill: o.fill || '#fff', stroke: o.stroke || C.ink, lw: o.lw ?? 1.5, r: o.r ?? 10, dash: o.dash });
+    if (title) this.text(title, x + 12, y + 16, { size: o.tsize || 14, weight: 700, color: o.tcolor || o.stroke || C.ink, font: FONT.head });
+  }
+}
+const mix = (a, b, t) => { // hex colours
+  const p = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+  const A = p(a), B = p(b); return `rgb(${A.map((v, i) => Math.round(lerp(v, B[i], t))).join(',')})`;
+};
+
+/* ---------------- shared numeric example (16 tokens, d = 8, tiles of 4) ---------------- */
+function rng(seed) { let s = seed >>> 0; return () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; }; }
+function randn(r) { let u = 0; while (u === 0) u = r(); const v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+const r1 = x => Math.round(x * 10) / 10;
+const DATA = (() => {
+  let q, K, V, s;
+  for (let seed = 11; seed < 4000; seed++) {
+    const r = rng(seed);
+    q = Array.from({ length: 8 }, () => r1(randn(r) * 1.25));
+    K = Array.from({ length: 16 }, () => Array.from({ length: 8 }, () => r1(randn(r))));
+    V = Array.from({ length: 16 }, () => Array.from({ length: 8 }, () => r1(randn(r))));
+    s = K.map(k => k.reduce((a, x, i) => a + x * q[i], 0) / Math.sqrt(8));
+    const tm = [0, 1, 2, 3].map(j => Math.max(...s.slice(4 * j, 4 * j + 4)));
+    const mx = Math.max(...s), mn = Math.min(...s);
+    if (tm[1] > tm[0] + 0.4 && tm[2] < tm[1] && tm[3] > tm[1] + 0.4 && mx < 4.2 && mn > -4 && tm[0] > -0.5) break;
+  }
+  const m = Math.max(...s);
+  const ex = s.map(x => Math.exp(x - m)), Z = sum(ex);
+  const w = ex.map(x => x / Z);
+  const O = V[0].map((_, d) => sum(w.map((wi, i) => wi * V[i][d])));
+  // plain (no max) tile stats, used in 7.2 / 7.3
+  const e = s.map(x => Math.exp(x));
+  const tiles = [0, 1, 2, 3].map(j => {
+    const idx = [4 * j, 4 * j + 1, 4 * j + 2, 4 * j + 3];
+    const sumj = sum(idx.map(i => e[i]));
+    const lw = idx.map(i => e[i] / sumj);
+    const Oj = V[0].map((_, d) => sum(idx.map((i, t) => lw[t] * V[i][d])));
+    const num = vscale(Oj, sumj);
+    return { idx, sum: sumj, lw, O: Oj, num };
+  });
+  // running-max online softmax
+  let mo = -Infinity, l = 0, u = new Array(8).fill(0); const run = [];
+  for (let j = 0; j < 4; j++) {
+    const S = s.slice(4 * j, 4 * j + 4), ms = Math.max(...S), mn = Math.max(mo, ms);
+    const a = mo === -Infinity ? 0 : Math.exp(mo - mn);
+    const P = S.map(x => Math.exp(x - mn)), rs = sum(P);
+    const l2 = a * l + rs;
+    const PV = V[0].map((_, d) => sum(P.map((pk, t) => pk * V[4 * j + t][d])));
+    const u2 = vadd(vscale(u, a), PV);
+    run.push({ S, ms, mo, mn, a, P, rs, lo: l, l: l2, uo: u, u: u2 });
+    mo = mn; l = l2; u = u2;
+  }
+  const Ofa = vscale(u, 1 / l);
+  return { q, K, V, s, m, w, O, e, tiles, run, Ofa };
+})();
+
+/* ---------------- stage controller ---------------- */
+const SCENES = {}; const STAGES = []; let ACTIVE = null;
+class Stage {
+  constructor(el) {
+    this.el = el; this.id = el.dataset.scene; this.sc = SCENES[this.id];
+    if (!this.sc) { el.textContent = 'Missing animation: ' + this.id; return; }
+    this.H = this.sc.H || 500; this.step = 0; this.st = 0; this.t = 0; this.playing = false;
+    this.speed = 1; this.state = {}; this.v = {}; this.visible = false; this.err = false;
+    this.build();
+    if (this.sc.init) this.sc.init(this.state, this);
+    STAGES.push(this); this.updateCaption();
+  }
+  build() {
+    const sc = this.sc, el = this.el;
+    el.innerHTML = `
+      <div class="stage-head">
+        <span class="stage-tag">Animation</span>
+        <span class="stage-title">${sc.title}</span>
+        <span class="stage-keys">← → step · P play · R reset · F full screen</span>
+      </div>
+      <div class="cv-wrap"><canvas></canvas></div>
+      <div class="caption"><span class="cap-n"></span><span class="cap-t"></span></div>
+      <div class="controls">
+        <button class="b-prev" title="Previous step (←)">◀ Prev</button>
+        <button class="b-play primary" title="Auto-play (P)">▶ Play</button>
+        <button class="b-next" title="Next step (→)">Next ▶</button>
+        <button class="b-reset" title="Reset (R)">↺ Reset</button>
+        <div class="dots"></div>
+        <label class="spd">speed <input type="range" min="0.25" max="2" step="0.25" value="1"></label>
+        <button class="b-fs" title="Full screen (F)">⤢ Full screen</button>
+      </div>
+      <div class="extra"></div>`;
+    this.wrap = el.querySelector('.cv-wrap'); this.cv = el.querySelector('canvas');
+    this.ctx = this.cv.getContext('2d'); this.g = new G(this.ctx);
+    this.wrap.style.aspectRatio = `${W} / ${this.H}`;
+    const q = s => el.querySelector(s);
+    q('.b-prev').onclick = () => this.go(this.step - 1);
+    q('.b-next').onclick = () => this.go(this.step + 1);
+    q('.b-play').onclick = () => this.toggle();
+    q('.b-reset').onclick = () => this.reset();
+    q('.b-fs').onclick = () => this.fullscreen();
+    q('.spd input').oninput = e => { this.speed = +e.target.value; };
+    const dots = q('.dots');
+    sc.steps.forEach((_, i) => { const d = document.createElement('button'); d.className = 'dot'; d.title = 'Step ' + (i + 1); d.onclick = () => this.go(i); dots.appendChild(d); });
+    const ex = q('.extra');
+    for (const ct of sc.controls || []) {
+      const lab = document.createElement('label'); lab.className = 'ctl';
+      if (ct.type === 'range') {
+        this.v[ct.id] = ct.value;
+        lab.innerHTML = `<span>${ct.label}</span><input type="range" min="${ct.min}" max="${ct.max}" step="${ct.step || 1}" value="${ct.value}"><output></output>`;
+        const inp = lab.querySelector('input'), out = lab.querySelector('output');
+        const upd = () => { this.v[ct.id] = +inp.value; out.textContent = ct.fmt ? ct.fmt(+inp.value) : inp.value; };
+        inp.oninput = upd; upd();
+      } else if (ct.type === 'check') {
+        this.v[ct.id] = !!ct.value;
+        lab.innerHTML = `<input type="checkbox" ${ct.value ? 'checked' : ''}><span>${ct.label}</span>`;
+        lab.querySelector('input').onchange = e => { this.v[ct.id] = e.target.checked; };
+      } else if (ct.type === 'select') {
+        this.v[ct.id] = ct.value;
+        lab.innerHTML = `<span>${ct.label}</span><select>${ct.options.map(o => `<option value="${o[0]}" ${o[0] == ct.value ? 'selected' : ''}>${o[1]}</option>`).join('')}</select>`;
+        lab.querySelector('select').onchange = e => { this.v[ct.id] = isNaN(+e.target.value) ? e.target.value : +e.target.value; };
+      } else if (ct.type === 'button') {
+        lab.innerHTML = `<button>${ct.label}</button>`;
+        lab.querySelector('button').onclick = () => sc.onButton && sc.onButton(ct.id, this.state, this);
+      }
+      ex.appendChild(lab);
+    }
+    if (sc.panel) { const p = sc.panel(this); if (p) ex.appendChild(p); }
+    if (!ex.children.length) ex.remove();
+    el.addEventListener('pointerdown', () => setActive(this));
+    el.addEventListener('mouseenter', () => setActive(this));
+  }
+  dur() { const d = this.sc.dur; return Array.isArray(d) ? (d[this.step] ?? 1.2) : (d || 1.2); }
+  go(n) {
+    n = clamp(n, 0, this.sc.steps.length - 1);
+    if (n === this.step) { if (n === this.sc.steps.length - 1 && this.playing) this.toggle(false); return; }
+    this.step = n; this.st = 0; this.updateCaption(); setActive(this);
+  }
+  reset() { this.toggle(false); this.step = 0; this.st = 0; this.t = 0; if (this.sc.init) { this.state = {}; this.sc.init(this.state, this); } this.updateCaption(); }
+  toggle(force) {
+    this.playing = force === undefined ? !this.playing : force;
+    if (this.playing && this.step === this.sc.steps.length - 1) { this.step = 0; this.st = 0; this.updateCaption(); }
+    this.el.querySelector('.b-play').textContent = this.playing ? '❚❚ Pause' : '▶ Play';
+  }
+  fullscreen() {
+    if (document.fullscreenElement === this.el) document.exitFullscreen();
+    else if (this.el.requestFullscreen) this.el.requestFullscreen();
+  }
+  updateCaption() {
+    this.el.querySelector('.cap-n').textContent = `Step ${this.step + 1} / ${this.sc.steps.length}`;
+    this.el.querySelector('.cap-t').textContent = this.sc.steps[this.step];
+    this.el.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('on', i <= this.step));
+  }
+  frame(dt) {
+    const dts = dt * this.speed; this.st += dts; this.t += dts;
+    if (this.playing && this.st > this.dur() + (this.sc.hold || 2.2)) {
+      if (this.step < this.sc.steps.length - 1) this.go(this.step + 1); else this.toggle(false);
+    }
+    const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+    const fs = document.fullscreenElement === this.el;
+    const cw = this.wrap.clientWidth, ch = fs ? this.wrap.clientHeight : cw * this.H / W;
+    if (!cw || !ch) return;
+    if (this.cv.width !== Math.round(cw * dpr) || this.cv.height !== Math.round(ch * dpr)) {
+      this.cv.width = Math.round(cw * dpr); this.cv.height = Math.round(ch * dpr);
+    }
+    const c = this.ctx, sc = Math.min(cw / W, ch / this.H), ox = (cw - W * sc) / 2, oy = (ch - this.H * sc) / 2;
+    c.setTransform(1, 0, 0, 1, 0, 0); c.fillStyle = C.bg; c.fillRect(0, 0, this.cv.width, this.cv.height);
+    c.setTransform(dpr * sc, 0, 0, dpr * sc, dpr * ox, dpr * oy);
+    // grid paper
+    c.beginPath(); c.strokeStyle = C.grid; c.lineWidth = 1;
+    for (let x = 0; x <= W; x += 25) { c.moveTo(x, 0); c.lineTo(x, this.H); }
+    for (let y = 0; y <= this.H; y += 25) { c.moveTo(0, y); c.lineTo(W, y); }
+    c.stroke();
+    const raw = clamp(this.st / this.dur()), step = this.step, st = this.st, self = this;
+    const S = {
+      step, raw, p: ease(raw), st, t: this.t, v: this.v, state: this.state, H: this.H, n: this.sc.steps.length,
+      at(k) { return step > k ? 1 : step === k ? ease(raw) : 0; },
+      tl(k, d, delay = 0) { return step > k ? 1 : step < k ? 0 : clamp((st - delay) / d); },
+      go(n) { self.go(n); }
+    };
+    try { this.sc.draw(this.g, S); }
+    catch (e) { if (!this.err) { console.error('scene ' + this.id, e); this.err = true; } }
+  }
+}
+function setActive(s) { ACTIVE = s; STAGES.forEach(x => x.el.classList.toggle('active', x === s)); }
+function pickActive() {
+  if (document.fullscreenElement) { const s = STAGES.find(x => x.el === document.fullscreenElement); if (s) return s; }
+  if (ACTIVE && ACTIVE.visible) return ACTIVE;
+  let best = null, bd = 1e9; const mid = innerHeight / 2;
+  for (const s of STAGES) if (s.visible) { const r = s.el.getBoundingClientRect(); const d = Math.abs((r.top + r.bottom) / 2 - mid); if (d < bd) { bd = d; best = s; } }
+  return best;
+}
+document.addEventListener('keydown', e => {
+  if (/INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
+  const s = pickActive(); if (!s) return;
+  const k = e.key;
+  if (k === 'ArrowRight') { s.go(s.step + 1); e.preventDefault(); }
+  else if (k === 'ArrowLeft') { s.go(s.step - 1); e.preventDefault(); }
+  else if (k === 'p' || k === 'P') s.toggle();
+  else if (k === 'r' || k === 'R') s.reset();
+  else if (k === 'f' || k === 'F') s.fullscreen();
+});
+function initStages() {
+  document.querySelectorAll('.stage[data-scene]').forEach(el => new Stage(el));
+  const io = new IntersectionObserver(es => es.forEach(en => { const s = STAGES.find(x => x.el === en.target); if (s) s.visible = en.isIntersecting; }), { rootMargin: '100px' });
+  STAGES.forEach(s => io.observe(s.el));
+  let last = performance.now();
+  const loop = now => {
+    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    for (const s of STAGES) if (s.visible || document.fullscreenElement === s.el) s.frame(dt);
+    requestAnimationFrame(loop);
+  };
+  requestAnimationFrame(loop);
+}
+
+/* =====================================================================
+   SCENES 1 — hook, roofline, GPU hierarchy, standard attention, tiling, baseline
+   ===================================================================== */
+
+/* ---------- Part 1: the hook ---------- */
+SCENES.hook = {
+  title: 'Why is attention moving so much data?', H: 470,
+  steps: [
+    'Tensor cores can do an enormous amount of matrix math every second',
+    'But every number they use has to travel in from HBM first',
+    'Naive attention shuttles giant N × N matrices: write S, read S, write P, read P',
+    'FlashAttention: stream small Q, K, V tiles in, keep the work on chip, send only O back',
+    'Same attention rule. Smarter execution.'
+  ],
+  dur: 1.0,
+  draw(g, S) {
+    const t = S.t, st = S.step;
+    // HBM
+    g.box(40, 140, 230, 220, '', { fill: C.hbm, stroke: C.purple, lw: 2 });
+    g.text('HBM', 155, 215, { size: 30, weight: 800, font: FONT.head, color: C.purple, align: 'center' });
+    g.text('off-chip memory', 155, 250, { size: 15, color: C.muted, align: 'center' });
+    g.text('large · far away', 155, 272, { size: 15, color: C.muted, align: 'center' });
+    // SM / tensor cores
+    g.box(620, 100, 340, 290, 'SM — tensor cores', { fill: '#fff', stroke: C.ink });
+    let busy = 1;
+    const T = 1.15;               // travel time along the pipe
+    const x0 = 275, x1 = 615, py = 250;
+    const packets = [];
+    if (st === 1) {
+      const P = 1.0, n = Math.floor(t / P);
+      let lastArr = -9;
+      for (let k = Math.max(0, n - 3); k <= n; k++) {
+        const age = t - k * P; if (age < 0) continue;
+        if (age < T) packets.push({ x: lerp(x0, x1 - 20, age / T), s: 20, col: [C.q, C.k, C.v][k % 3], lab: 'QKV'[k % 3] });
+        else lastArr = Math.max(lastArr, k * P + T);
+      }
+      busy = Math.max(0.06, 1 - (t - lastArr) / 0.35);
+    } else if (st === 2) {
+      const cyc = 4.4, ph = t % cyc, k = Math.floor(ph / 1.1), f = (ph % 1.1) / 1.1;
+      const labs = ['write S', 'read S', 'write P', 'read P'], toHBM = k % 2 === 0;
+      const xx = toHBM ? lerp(x1 - 70, x0, ease(f)) : lerp(x0, x1 - 70, ease(f));
+      packets.push({ x: xx, s: 66, col: k < 2 ? '#c7b8f0' : '#b4a0ea', lab: k < 2 ? 'S' : 'P', big: true });
+      g.text(labs[k], (x0 + x1) / 2, 195, { size: 22, font: FONT.hand, weight: 700, color: C.red, align: 'center' });
+      g.text('N × N  —  over and over', (x0 + x1) / 2, 320, { size: 15, color: C.muted, align: 'center' });
+      busy = (!toHBM && f > 0.9) ? 0.9 : 0.06;
+    } else if (st >= 3) {
+      const P = 0.26, n = Math.floor(t / P);
+      for (let k = Math.max(0, n - 6); k <= n; k++) {
+        const age = t - k * P; if (age < 0 || age > T) continue;
+        packets.push({ x: lerp(x0, x1 - 16, age / T), s: 16, col: [C.q, C.k, C.v][k % 3] });
+      }
+      const ph = (t % 2.4) / 1.0; // O tile going back
+      if (ph < 1) packets.push({ x: lerp(x1 - 16, x0, ph), s: 16, col: '#fff', lab: 'O', out: true });
+      busy = 0.82 + 0.15 * Math.sin(t * 7);
+    }
+    // pipe
+    g.alpha(S.at(1), () => {
+      g.rect(x0, py - 22, x1 - x0, 44, { fill: '#ebebe6', stroke: C.faint, r: 22 });
+      g.text('HBM  ⇄  SM', (x0 + x1) / 2, py + 42, { size: 13, color: C.muted, align: 'center' });
+    });
+    packets.forEach(p => {
+      g.rect(p.x, py - p.s / 2, p.s, p.s, { fill: p.col, stroke: p.out ? C.green : C.ink, lw: p.out ? 2 : 1, r: 3 });
+      if (p.lab) g.text(p.lab, p.x + p.s / 2, py + 1, { size: p.big ? 24 : 11, weight: 700, align: 'center', color: p.out ? C.green : C.ink });
+    });
+    // tensor core cells
+    for (let r = 0; r < 5; r++) for (let k = 0; k < 7; k++) {
+      const i = r * 7 + k;
+      const b = st === 0 ? 0.65 + 0.35 * Math.sin(t * 6 + i) : busy * (0.75 + 0.25 * Math.sin(t * 8 + i * 1.3));
+      g.rect(645 + k * 44, 135 + r * 44, 36, 36, { fill: mix('#f3efe6', '#f59e0b', clamp(b)), stroke: '#8a7c64', lw: 1, r: 4 });
+    }
+    // busy meter
+    const shown = st === 0 ? 1 : st === 1 ? 0.22 : st === 2 ? 0.12 : 0.85;
+    S.state.mb = lerp(S.state.mb ?? 1, shown, 0.05);
+    g.text('tensor cores busy (illustrative)', 640, 410, { size: 13, color: C.muted });
+    g.rect(640, 422, 300, 16, { fill: '#e9e9e4', r: 8 });
+    g.rect(640, 422, 300 * S.state.mb, 16, { fill: S.state.mb > .6 ? C.green : C.red, r: 8 });
+    if (st === 1 || st === 2) g.hand('waiting for data…', 790, 70, { color: C.red, align: 'center', size: 28 });
+    if (st >= 3) g.hand('S and P never leave the chip', 445, 120, { color: C.green, align: 'center', size: 26 });
+    g.alpha(S.at(4), () => {
+      g.rect(150, 20, 700, 64, { fill: '#fff', stroke: C.purple, lw: 2, r: 14 });
+      g.text('Same attention rule.  Smarter execution.', 500, 52, { size: 26, weight: 800, font: FONT.head, color: C.purple, align: 'center' });
+      ['FA1', 'FA2', 'FA3', 'FA4'].forEach((s, i) => g.pill(s, 120 + i * 110, 425, { size: 15, weight: 700, color: TILE[i], fill: TILE_L[i] }));
+    });
+  }
+};
+
+/* ---------- Part 2: roofline ---------- */
+SCENES.roofline = {
+  title: 'Roofline: are we limited by math or by memory?', H: 480,
+  steps: [
+    'x-axis: arithmetic intensity (FLOPs per byte moved). y-axis: achieved FLOPs per second',
+    'Low intensity: memory bandwidth limits us — the sloped part',
+    'High intensity: the arithmetic units are the limit — the flat roof',
+    'Materialised attention moves big S and P matrices: few FLOPs per byte',
+    'FlashAttention reuses tiles on chip: more useful FLOPs per byte fetched',
+    'Careful: dense attention still does O(N²·d) work. We cut bytes, not FLOPs'
+  ],
+  controls: [{ type: 'range', id: 'ai', label: 'Try a point: intensity', min: 2, max: 98, value: 40, fmt: v => v + '%' }],
+  draw(g, S) {
+    const X0 = 100, Y0 = 410, X1 = 940, Ytop = 70, ridge = 520, roofY = 130;
+    const curveY = x => x < ridge ? lerp(Y0, roofY, (x - X0) / (ridge - X0)) : roofY;
+    g.alpha(S.at(0), () => {
+      g.arrow(X0, Y0, X1, Y0, { lw: 2 }); g.arrow(X0, Y0, X0, Ytop - 20, { lw: 2 });
+      g.text('Arithmetic intensity  =  FLOPs / bytes moved  →', (X0 + X1) / 2, Y0 + 32, { size: 16, align: 'center' });
+      g.c.save(); g.c.translate(X0 - 40, (Y0 + Ytop) / 2); g.c.rotate(-Math.PI / 2);
+      g.text('Achieved FLOPs / sec  →', 0, 0, { size: 16, align: 'center' }); g.c.restore();
+    });
+    const p1 = S.at(1), p2 = S.at(2);
+    if (p1 > 0) {
+      const xe = lerp(X0, ridge, p1); g.line(X0, Y0, xe, curveY(xe), { color: C.blue, lw: 4 });
+      g.alpha(p1, () => { g.c.save(); g.c.translate(268, 238); g.c.rotate(-0.59); g.hand('memory-bound', 0, 0, { color: C.blue, align: 'center', size: 30 }); g.c.restore(); });
+    }
+    if (p2 > 0) {
+      g.line(ridge, roofY, lerp(ridge, X1 - 20, p2), roofY, { color: C.orange, lw: 4 });
+      g.alpha(p2, () => g.hand('compute-bound', 730, roofY - 26, { color: C.orange, align: 'center', size: 30 }));
+      g.alpha(p2, () => g.line(ridge, roofY, ridge, Y0, { color: C.faint, dash: [5, 5] }));
+    }
+    const pa = 220;
+    g.alpha(S.at(3), () => {
+      g.circle(pa, curveY(pa), 10, { fill: C.red });
+      g.hand('materialised attention', pa + 14, curveY(pa) + 34, { color: C.red, size: 24 });
+      g.text('write/read S and P', pa + 14, curveY(pa) + 58, { size: 13, color: C.muted });
+    });
+    if (S.step >= 4) {
+      const xx = lerp(pa, 640, S.at(4));
+      g.alpha(0.35, () => g.circle(pa, curveY(pa), 10, { fill: C.red }));
+      g.curve(pa + 10, curveY(pa) - 16, (pa + xx) / 2, curveY(pa) - 160, xx - 12, curveY(xx) - 8, { color: C.green, dash: [6, 5], lw: 2 });
+      g.circle(xx, curveY(xx), 11, { fill: C.green });
+      g.alpha(S.at(4), () => { g.hand('FlashAttention', xx, curveY(xx) + 38, { color: C.green, align: 'center', size: 28 }); g.text('reuse tiles on chip', xx, curveY(xx) + 62, { size: 13, color: C.muted, align: 'center' }); });
+    }
+    g.alpha(S.at(5), () => {
+      g.rect(560, 250, 370, 90, { fill: '#fff', stroke: C.ink, r: 10 });
+      g.text('Dense attention work is still O(N²·d).', 745, 280, { size: 16, weight: 700, align: 'center' });
+      g.text('We cut the bytes moved, not the FLOPs.', 745, 308, { size: 16, align: 'center', color: C.purple });
+    });
+    // user point
+    if (S.step >= 2) {
+      const ux = lerp(X0 + 10, X1 - 30, S.v.ai / 100), uy = curveY(ux);
+      g.circle(ux, uy, 7, { fill: '#fff', stroke: C.blue, lw: 3 });
+      g.text(ux < ridge ? 'your point: memory-bound' : 'your point: compute-bound', ux, uy - 18, { size: 12, color: C.blue, align: 'center', weight: 700 });
+    }
+  }
+};
+
+/* ---------- Part 3: GPU memory hierarchy ---------- */
+SCENES.gpu = {
+  title: 'Inside the GPU: SMs, registers, shared memory, L2, HBM', H: 540,
+  steps: [
+    'A GPU is many streaming multiprocessors (SMs) — 132 on an H100 SXM',
+    'Inside each SM: CUDA cores, tensor cores, registers, shared memory, L1',
+    'Registers: closest and fastest, but every thread has a small budget',
+    'Shared memory (SMEM): the on-chip tile workspace — up to 228 KB per SM on H100',
+    'L2: much larger, shared by every SM — a cache, not our managed workspace',
+    'HBM: the largest memory, but the farthest from the compute units',
+    'FlashAttention: bring tiles into SMEM once, and do as much work as possible there'
+  ],
+  dur: 1.0,
+  draw(g, S) {
+    const st = S.step, t = S.t;
+    // pyramid
+    const lv = [
+      { n: 'Registers', d: 'per-thread · fastest · smallest', w: 130, col: C.orange },
+      { n: 'Shared memory (SMEM)', d: 'on-chip tile workspace', w: 230, col: C.green },
+      { n: 'L1 / L2 caches', d: 'hardware-managed', w: 300, col: C.blue },
+      { n: 'HBM / VRAM', d: 'off-chip · largest · farthest', w: 370, col: C.purple }
+    ];
+    const hiLv = st >= 2 && st <= 5 ? st - 2 : -1;
+    lv.forEach((L, i) => {
+      const y = 60 + i * 110, cx = 220, wTop = i === 0 ? 40 : lv[i - 1].w, wb = L.w;
+      const on = hiLv === i, a = hiLv === -1 ? 1 : on ? 1 : 0.35;
+      g.alpha(a, () => {
+        g.poly([[cx - wTop / 2, y], [cx + wTop / 2, y], [cx + wb / 2, y + 96], [cx - wb / 2, y + 96]], { close: true, fill: on ? mix('#ffffff', L.col, 0.22) : '#fff', color: L.col, lw: on ? 3.5 : 2 });
+        g.text(L.n, cx, y + 52, { size: 16, weight: 700, align: 'center', color: L.col });
+        g.text(L.d, cx, y + 74, { size: 12, align: 'center', color: C.muted });
+      });
+    });
+    g.arrow(18, 470, 18, 70, { color: C.orange, lw: 2 }); g.text('faster', 26, 60, { size: 12, color: C.orange });
+    g.arrow(420, 70, 420, 470, { color: C.purple, lw: 2 }); g.text('bigger', 380, 486, { size: 12, color: C.purple });
+    // chip
+    const chipA = 1;
+    g.box(450, 30, 530, 240, 'GPU die', { fill: '#fbfbf9', stroke: C.ink, tsize: 13 });
+    const smX = i => 468 + (i % 6) * 84, smY = i => 58 + Math.floor(i / 6) * 70;
+    for (let i = 0; i < 12; i++) {
+      const app = clamp(S.at(0) * 12 - i);
+      const hl = (st === 6 && i < 6) || (st >= 1 && i === 0);
+      g.alpha(app, () => {
+        g.rect(smX(i), smY(i), 74, 58, { fill: hl ? '#f1fbf3' : '#fff', stroke: hl ? C.green : C.ink, lw: hl ? 2.5 : 1.3, r: 6 });
+        g.text('SM', smX(i) + 37, smY(i) + 22, { size: 14, weight: 700, align: 'center' });
+        g.rect(smX(i) + 10, smY(i) + 36, 54, 12, { fill: st === 3 || st === 6 ? '#bbf7d0' : '#eef7f0', stroke: C.green, lw: 1, r: 3 });
+      });
+    }
+    g.text('H100 SXM: 132 SMs (12 drawn)', 970, 46, { size: 12, align: 'right', color: C.muted });
+    const l2on = st === 4;
+    g.rect(468, 205, 494, 50, { fill: l2on ? C.blueL : '#f2f5fb', stroke: C.blue, lw: l2on ? 3 : 1.5, r: 6 });
+    g.text('L2 cache — shared by all SMs', 715, 230, { size: 15, weight: 700, align: 'center', color: C.blue });
+    for (let i = 0; i < 4; i++) {
+      const on = st === 5;
+      g.rect(468 + i * 126, 290, 116, 50, { fill: on ? '#e2d8fa' : C.hbm, stroke: C.purple, lw: on ? 3 : 1.5, r: 6 });
+      g.text('HBM', 526 + i * 126, 315, { size: 15, weight: 700, align: 'center', color: C.purple });
+    }
+    g.text('off-chip', 970, 356, { size: 12, align: 'right', color: C.muted });
+    // SM detail
+    g.alpha(S.at(1), () => {
+      g.line(smX(0), smY(0) + 58, 450, 372, { color: C.faint, dash: [4, 4] });
+      g.line(smX(0) + 74, smY(0) + 58, 980, 372, { color: C.faint, dash: [4, 4] });
+      g.box(450, 372, 530, 158, 'Inside one SM', { fill: '#fff', stroke: C.ink, tsize: 13 });
+      // CUDA cores
+      g.text('CUDA cores', 470, 404, { size: 12, color: C.muted });
+      for (let r = 0; r < 4; r++) for (let k = 0; k < 8; k++) g.circle(476 + k * 13, 420 + r * 13, 4.2, { fill: '#cbd5e1' });
+      g.text('Tensor cores', 600, 404, { size: 12, color: C.muted });
+      for (let k = 0; k < 4; k++) g.rect(600 + k * 30, 414, 24, 40, { fill: '#fde68a', stroke: '#a16207', lw: 1, r: 3 });
+      const rOn = st === 2, sOn = st === 3 || st === 6;
+      g.rect(740, 398, 220, 30, { fill: rOn ? '#ffedd5' : '#fff7ed', stroke: C.orange, lw: rOn ? 3 : 1.3, r: 5 });
+      g.text('Registers (per thread)', 850, 413, { size: 13, weight: 700, align: 'center', color: C.orange });
+      g.rect(740, 438, 220, 44, { fill: sOn ? '#bbf7d0' : '#f0fdf4', stroke: C.green, lw: sOn ? 3 : 1.3, r: 5 });
+      g.text('Shared memory  ≤ 228 KB', 850, 455, { size: 13, weight: 700, align: 'center', color: C.green });
+      g.text('(+ L1 cache — a cache, not the same thing)', 850, 472, { size: 10, align: 'center', color: C.muted });
+      g.rect(470, 490, 490, 26, { fill: '#f8fafc', stroke: C.faint, r: 5 });
+      g.text('combined L1 / texture / shared structure: 256 KB  — not all usable as shared memory', 715, 503, { size: 11, align: 'center', color: C.muted });
+    });
+    if (st === 6) { // tiles flowing HBM -> L2 -> SMEM
+      for (let k = 0; k < 6; k++) {
+        const f = ((t * 0.7 + k / 6) % 1);
+        const sx = 526 + (k % 4) * 126, sy = 290, tx = smX(k) + 37, ty = smY(k) + 42;
+        const x = lerp(sx, tx, ease(f)), y = lerp(sy, ty, ease(f));
+        g.rect(x - 7, y - 7, 14, 14, { fill: [C.q, C.k, C.v][k % 3], stroke: C.ink, lw: 1, r: 2 });
+      }
+      g.hand('load once → reuse in SMEM', 715, 20 + 0, { color: C.green, align: 'center', size: 24 });
+    }
+  }
+};
+
+/* ---------- Part 4: standard (materialised) attention ---------- */
+const NVALS = [512, 1024, 2048, 4096, 8192, 16384, 32768];
+const mibStr = b => { const m = b / 2 ** 20; return m >= 1024 ? (m / 1024).toFixed(m >= 10240 ? 0 : 1) + ' GiB' : (m >= 10 ? m.toFixed(0) : m.toFixed(1)) + ' MiB'; };
+SCENES.standard = {
+  title: 'Standard attention: follow the N × N matrices', H: 540,
+  steps: [
+    'Q, K and V (each N × d) live in HBM',
+    'Kernel 1: load Q and K, compute S = QKᵀ/√d — an N × N matrix',
+    'Write S out to HBM',
+    'Kernel 2: read S back, apply row-wise softmax → P (also N × N)',
+    'Write P out to HBM',
+    'Kernel 3: read P (and V), compute O = PV, write O',
+    'Four N × N transfers. At N = 4096, FP16: 4 × 32 MiB = 128 MiB per head, per layer'
+  ],
+  controls: [{ type: 'range', id: 'n', label: 'Sequence length N', min: 0, max: 6, value: 3, fmt: v => NVALS[v].toLocaleString() }],
+  dur: 1.3,
+  draw(g, S) {
+    const st = S.step, p = S.p, N = NVALS[S.v.n], mat = N * N * 2;
+    g.box(30, 40, 290, 470, 'HBM', { fill: C.hbm, stroke: C.purple, tsize: 18 });
+    g.box(640, 40, 330, 470, 'GPU compute (SMs)', { fill: '#fff', stroke: C.ink, tsize: 16 });
+    const hbmSlot = { Q: [60, 90], K: [120, 90], V: [180, 90], O: [240, 90], S: [60, 290], P: [190, 290] };
+    const tall = (x, y, lab, col) => { g.rect(x, y, 40, 130, { fill: col, stroke: C.ink, lw: 1.2, r: 3 }); g.text(lab, x + 20, y + 65, { size: 18, weight: 800, align: 'center' }); };
+    tall(...hbmSlot.Q, 'Q', C.q); tall(...hbmSlot.K, 'K', C.k); tall(...hbmSlot.V, 'V', '#9be3a6');
+    g.text('N × d', 140, 238, { size: 13, color: C.muted, align: 'center' });
+    const sq = (x, y, lab, col, s = 110) => { g.rect(x, y, s, s, { fill: col, stroke: C.ink, lw: 1.2, r: 3 }); for (let i = 1; i < 6; i++) { g.line(x + i * s / 6, y, x + i * s / 6, y + s, { color: 'rgba(0,0,0,.12)', lw: 1 }); g.line(x, y + i * s / 6, x + s, y + i * s / 6, { color: 'rgba(0,0,0,.12)', lw: 1 }); } g.text(lab, x + s / 2, y + s / 2, { size: 26, weight: 800, align: 'center' }); };
+    const SC = '#cdbff3', PC = '#a993ea';
+    // compute area contents
+    const cmp = { x: 715, y: 120 };
+    if (st === 1) { // build S
+      const f = p; g.text('S = QKᵀ / √d', 805, 95, { size: 18, weight: 700, align: 'center', font: FONT.mono });
+      const s = 180, n = 12, cells = Math.floor(f * n * n);
+      for (let i = 0; i < cells; i++) g.rect(cmp.x + (i % n) * s / n, cmp.y + Math.floor(i / n) * s / n, s / n - 1, s / n - 1, { fill: SC });
+      g.rect(cmp.x, cmp.y, s, s, { stroke: C.ink });
+      g.text('N × N', cmp.x + s / 2, cmp.y + s + 18, { size: 14, align: 'center', color: C.muted });
+      // Q,K flying in
+      g.alpha(1 - f, () => { g.rect(lerp(60, 660, f), 100, 30, 90, { fill: C.q, stroke: C.ink }); g.rect(lerp(120, 660, f), 200, 30, 90, { fill: C.k, stroke: C.ink }); });
+    }
+    const fly = (from, to, lab, col, f) => { const x = lerp(from[0], to[0], ease(f)), y = lerp(from[1], to[1], ease(f)); const toHBM = to[0] < 400; sq(x, y, lab, col, toHBM ? lerp(180, 110, ease(f)) : lerp(110, 180, ease(f))); };
+    if (st === 2) fly([cmp.x, cmp.y], hbmSlot.S, 'S', SC, p);
+    if (st === 3) {
+      if (p < 0.55) fly(hbmSlot.S, [cmp.x, cmp.y], 'S', SC, p / 0.55);
+      else { sq(cmp.x, cmp.y, 'P', mix('#cdbff3', '#a993ea', (p - .55) / .45), 180); g.text('softmax (row-wise)', 805, 95, { size: 16, weight: 700, align: 'center' }); }
+    }
+    if (st === 4) fly([cmp.x, cmp.y], hbmSlot.P, 'P', PC, p);
+    if (st === 5) {
+      if (p < 0.5) fly(hbmSlot.P, [cmp.x, cmp.y], 'P', PC, p / 0.5);
+      else { g.text('O = PV', 805, 95, { size: 18, weight: 700, align: 'center', font: FONT.mono }); g.rect(lerp(780, 240, (p - .5) / .5), lerp(150, 90, (p - .5) / .5), 40, 130, { fill: '#fff', stroke: C.green, lw: 2.5 }); }
+    }
+    // stored in HBM
+    if (st >= 3 || (st === 2 && p > .98)) sq(...hbmSlot.S, 'S', SC);
+    if (st >= 5 || (st === 4 && p > .98)) sq(...hbmSlot.P, 'P', PC);
+    if (st >= 6 || (st === 5 && p > .98)) { g.rect(...hbmSlot.O, 40, 130, { fill: '#fff', stroke: C.green, lw: 2.5, r: 3 }); g.text('O', 260, 155, { size: 18, weight: 800, align: 'center', color: C.green }); }
+    g.text('N × N each', 190, 420, { size: 13, color: C.muted, align: 'center' });
+    // transfer arrows labels in middle
+    const labs = [['write S', 2], ['read S', 3], ['write P', 4], ['read P', 5]];
+    labs.forEach(([l, s], i) => {
+      const y = 300 + i * 46, on = st >= s;
+      g.alpha(on ? 1 : 0.18, () => {
+        const right = l.startsWith('read');
+        g.arrow(right ? 345 : 615, y, right ? 615 : 345, y, { color: st === s ? C.red : C.ink, lw: st === s ? 3 : 1.5 });
+        g.text(l + ':  N × N', 480, y - 13, { size: 14, align: 'center', weight: 700, color: st === s ? C.red : C.ink });
+      });
+    });
+    // traffic counter
+    const nT = st < 2 ? 0 : st === 2 ? p : st === 3 ? 1 + p : st === 4 ? 2 + p : st >= 5 ? Math.min(4, 3 + (st === 5 ? p : 1)) : 0;
+    g.rect(340, 60, 285, 100, { fill: '#fff', stroke: C.red, r: 10, lw: 2 });
+    g.text('N × N traffic so far', 482, 82, { size: 14, align: 'center', color: C.muted });
+    g.text(mibStr(nT * mat), 482, 118, { size: 34, weight: 800, align: 'center', color: C.red, font: FONT.head });
+    g.text(`one N × N matrix = ${N.toLocaleString()}² × 2 B = ${mibStr(mat)}`, 482, 147, { size: 11, align: 'center', color: C.muted });
+    g.alpha(S.at(6), () => {
+      g.rect(650, 330, 310, 170, { fill: '#fff8f8', stroke: C.red, r: 10, lw: 2 });
+      g.text(`4 × ${mibStr(mat)} = ${mibStr(4 * mat)}`, 805, 362, { size: 20, weight: 800, align: 'center', color: C.red });
+      g.text('per head, per layer', 805, 388, { size: 14, align: 'center' });
+      g.text('(Q, K, V, O traffic not counted)', 805, 410, { size: 12, align: 'center', color: C.muted });
+      g.text(`× 32 layers = ${mibStr(4 * mat * 32)} per head`, 805, 440, { size: 14, align: 'center', weight: 700 });
+      g.text(`${mibStr(mat)} ≫ 228 KB of SMEM per SM`, 805, 470, { size: 13, align: 'center', color: C.purple, weight: 700 });
+    });
+  }
+};
+
+/* ---------- Part 5: tiling + fusion ---------- */
+SCENES.tiling = {
+  title: 'Tiling + fusion: compute a tile, use it, move on', H: 540,
+  steps: [
+    'Split Q, K, V into tiles (blocks of rows)',
+    'Load one Q tile into on-chip SRAM — it stays there',
+    'Stream K/V tiles through: score tile → softmax update → accumulate',
+    'Each score tile is consumed immediately — S and P are never written to HBM',
+    'After all K/V tiles: write the finished O tile, then move to the next Q tile'
+  ],
+  dur: 1.0,
+  draw(g, S) {
+    const st = S.step;
+    g.box(30, 25, 940, 165, 'HBM', { fill: C.hbm, stroke: C.purple, tsize: 16 });
+    const strip = (x, lab, col, hiTile, done) => {
+      for (let i = 0; i < 4; i++) g.rect(x, 52 + i * 30, 60, 28, { fill: done && done(i) ? '#fff' : col, stroke: hiTile === i ? C.red : C.ink, lw: hiTile === i ? 3 : 1, r: 3 });
+      g.text(lab, x + 30, 180, { size: 15, weight: 800, align: 'center' });
+    };
+    // timeline
+    const QL = 0.8, KV = 2.0, OW = 0.8, PER = QL + 4 * KV + OW;
+    let qi = 0, kj = -1, ph = 'idle', f = 0, oDone = 0;
+    if (st === 1) { ph = 'qload'; f = clamp(S.st / QL); }
+    else if (st === 2 || st === 3) { const tt = S.st % (4 * KV); kj = Math.floor(tt / KV); f = (tt % KV) / KV; ph = 'kv'; }
+    else if (st === 4) {
+      const tt = S.st % (4 * PER); qi = Math.floor(tt / PER); const r = tt % PER; oDone = qi;
+      if (r < QL) { ph = 'qload'; f = r / QL; } else if (r < QL + 4 * KV) { const rr = r - QL; kj = Math.floor(rr / KV); f = (rr % KV) / KV; ph = 'kv'; } else { ph = 'owrite'; f = (r - QL - 4 * KV) / OW; }
+    }
+    const qHome = [100, 52 + qi * 30], kHome = j => [260, 52 + j * 30], vHome = j => [360, 52 + j * 30];
+    strip(100, 'Q', C.q, st >= 1 ? qi : -1);
+    strip(260, 'K', C.k, kj); strip(360, 'V', '#9be3a6', kj);
+    g.alpha(S.at(0), () => { for (let i = 0; i < 4; i++) g.text('tile ' + (i + 1), 90, 66 + i * 30, { size: 11, align: 'right', color: C.muted }); });
+    // O strip
+    for (let i = 0; i < 4; i++) {
+      const filled = st === 4 && (i < oDone || (i === oDone && ph === 'owrite' && f > .95));
+      g.rect(860, 52 + i * 30, 60, 28, { fill: filled ? '#dcfce7' : '#fff', stroke: filled ? C.green : C.faint, lw: filled ? 2 : 1, dash: filled ? [] : [3, 3], r: 3 });
+    }
+    g.text('O', 890, 180, { size: 15, weight: 800, align: 'center', color: C.green });
+    // SRAM box
+    g.box(250, 240, 500, 230, 'SRAM / shared memory — on chip', { fill: C.sram, stroke: C.green, dash: [7, 5], lw: 2, tsize: 14 });
+    const qSlot = [280, 290], kSlot = [380, 290], vSlot = [470, 290];
+    const tile = (x, y, col, lab) => { g.rect(x, y, 70, 30, { fill: col, stroke: C.ink, lw: 1.2, r: 3 }); g.text(lab, x + 35, y + 15, { size: 12, weight: 700, align: 'center' }); };
+    if (st >= 1) {
+      if (ph === 'qload') { const e = ease(f); tile(lerp(qHome[0], qSlot[0], e), lerp(qHome[1], qSlot[1], e), C.q, 'Q' + (qi + 1)); }
+      else if (ph !== 'idle' || st >= 1) tile(...qSlot, C.q, 'Q' + (qi + 1));
+      g.text('stays', qSlot[0] + 35, qSlot[1] + 46, { size: 12, color: C.muted, align: 'center' });
+    }
+    let accFill = 0;
+    if (ph === 'kv') {
+      const e = ease(clamp(f / 0.3));
+      tile(lerp(kHome(kj)[0], kSlot[0], e), lerp(kHome(kj)[1], kSlot[1], e), C.k, 'K' + (kj + 1));
+      tile(lerp(vHome(kj)[0], vSlot[0], e), lerp(vHome(kj)[1], vSlot[1], e), '#9be3a6', 'V' + (kj + 1));
+      // score tile
+      const sa = seg(f, 0.3, 0.45) * (1 - seg(f, 0.82, 0.97));
+      g.alpha(sa, () => {
+        for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) g.rect(580 + c * 22, 285 + r * 22, 20, 20, { fill: '#cdbff3', stroke: C.ink, lw: 1 });
+        g.text('score tile', 624, 380, { size: 12, align: 'center', color: C.purple, weight: 700 });
+      });
+      if (f > 0.82) g.hand('consumed ✓', 624, 400, { color: C.green, size: 20, align: 'center' });
+      accFill = (kj + seg(f, 0.5, 0.8)) / 4;
+      if (f > 0.5 && f < 0.82) g.hand('softmax update → accumulate', 280, 398, { color: C.purple, size: 22 });
+    } else if (ph === 'owrite') accFill = 1;
+    if (st >= 2) {
+      g.text('running state per row: m, l, O_acc', 280, 425, { size: 13, weight: 700 });
+      g.rect(280, 437, 440, 18, { fill: '#fff', stroke: C.green, r: 9 });
+      g.rect(280, 437, 440 * accFill, 18, { fill: C.green, r: 9 });
+    }
+    if (ph === 'owrite') { const e = ease(f); g.rect(lerp(300, 860, e), lerp(437, 52 + qi * 30, e), 60, 28, { fill: '#dcfce7', stroke: C.green, lw: 2, r: 3 }); g.hand('write O tile', 800, 230, { color: C.green, size: 24 }); }
+    g.alpha(S.at(3), () => {
+      g.arrow(700, 250, 760, 200, { color: C.red, lw: 2.5, dash: [6, 4] }); g.cross(735, 222, 26);
+      g.text('S, P → HBM?  never', 800, 214, { size: 15, weight: 700, color: C.red });
+    });
+    g.text('Full N × N S and P are not materialised in HBM', 500, 505, { size: 16, weight: 700, align: 'center', color: st >= 3 ? C.green : C.muted });
+  }
+};
+
+/* ---------- Part 6: baseline with one query ---------- */
+SCENES.baseline = {
+  title: 'Baseline: one query q1 against all 16 keys', H: 640,
+  steps: [
+    'Q, K, V are each 16 × 8 — 16 tokens, head dimension 8',
+    'Focus on one query row: q1 (8 numbers)',
+    'Dot q1 with every key: s1 … s16 (one row of the 16 × 16 score matrix)',
+    'Softmax over all 16 scores (subtract the max m first): 16 weights that sum to 1',
+    'O1 = w1·v1 + w2·v2 + … + w16·v16   →   (1×16)(16×8) = 1×8',
+    'Goal: the SAME O1 — but processing the keys in tiles of 4'
+  ],
+  dur: [1.0, 1.0, 3.4, 1.4, 1.6, 1.2],
+  draw(g, S) {
+    const D = DATA, st = S.step, cs = 13, gp = 3;
+    const MX = { Q: 70, K: 430, V: 790 }, MY = 92;
+    const lab = (s, x) => g.hand(s, x + 62, 50, { size: 34, align: 'center' });
+    lab('Q : 16 × 8', MX.Q); lab('K : 16 × 8', MX.K); lab('V : 16 × 8', MX.V);
+    const sweep = S.tl(2, 3.0);
+    const curK = st === 2 ? Math.min(15, Math.floor(sweep * 16)) : -1;
+    const wmax = Math.max(...D.w);
+    g.matrix(MX.Q, MY, 16, 8, { cs, gap: gp, fill: C.q, alpha: r => st >= 1 && r > 0 ? 0.3 : 1 });
+    g.matrix(MX.K, MY, 16, 8, { cs, gap: gp, fill: C.k, alpha: r => (curK >= 0 && r !== curK) ? 0.45 : 1 });
+    g.matrix(MX.V, MY, 16, 8, { cs, gap: gp, fill: C.v, alpha: r => st >= 4 ? 0.12 + 0.88 * D.w[r] / wmax * S.at(4) + (1 - S.at(4)) * 0.88 : 1 });
+    // row labels like the board
+    g.hand('q1', MX.Q - 40, MY + 6, { color: C.green, size: 26 });
+    ['k1', 'k2', 'k3'].forEach((s, i) => g.hand(s, MX.K - 8, MY + 7 + i * 16, { color: C.green, size: 17, align: 'right' }));
+    g.hand('k16', MX.K - 8, MY + 7 + 15 * 16, { color: C.green, size: 17, align: 'right' });
+    g.line(MX.K - 20, MY + 60, MX.K - 20, MY + 225, { color: C.green, dash: [3, 8], lw: 2 });
+    ['v1', 'v2'].forEach((s, i) => g.hand(s, MX.V - 8, MY + 7 + i * 16, { color: C.green, size: 17, align: 'right' }));
+    g.hand('v16', MX.V - 8, MY + 7 + 15 * 16, { color: C.green, size: 17, align: 'right' });
+    g.line(MX.V - 20, MY + 45, MX.V - 20, MY + 225, { color: C.green, dash: [3, 8], lw: 2 });
+    if (st >= 1) g.rect(MX.Q - 5, MY - 4, 8 * 16 + 7, 21, { stroke: C.ink, lw: 2 });
+    // scores row
+    const SX = 70, SY = 400, cw = 56;
+    if (st >= 2) {
+      g.math('s_{i} = q1 · k_{i} / √8', SX, SY - 22, { size: 24 });
+      const shown = st > 2 ? 16 : Math.min(16, Math.floor(sweep * 16) + 1);
+      for (let i = 0; i < 16; i++) {
+        g.rect(SX + i * cw, SY, cw - 4, 30, { fill: i < shown ? '#efe9fb' : '#fff', stroke: i === curK ? C.red : C.ink, lw: i === curK ? 2.5 : 1, r: 3 });
+        if (i < shown) g.mono(fmt(D.s[i]), SX + i * cw + (cw - 4) / 2, SY + 16, { align: 'center', size: 12 });
+        g.text('s' + (i + 1), SX + i * cw + (cw - 4) / 2, SY + 42, { size: 11, color: C.muted, align: 'center' });
+      }
+      if (curK >= 0) { // link line from q1 to k_i
+        g.line(MX.Q + 8 * 16 + 4, MY + 7, MX.K - 46, MY + 7 + curK * 16, { color: C.red, lw: 1.6, dash: [5, 4] });
+        g.arrow(MX.K + 8 * 16, MY + 7 + curK * 16, SX + curK * cw + 26, SY - 2, { color: C.red, lw: 1.4 });
+      }
+    }
+    // softmax weights bars
+    g.alpha(S.at(3), () => {
+      const by = 520;
+      for (let i = 0; i < 16; i++) {
+        const h = 62 * D.w[i] / wmax * S.at(3);
+        g.rect(SX + i * cw + 8, by - h, cw - 20, h, { fill: C.purple, r: 2 });
+        g.mono(fmt(D.w[i], 2), SX + i * cw + (cw - 4) / 2, by + 12, { align: 'center', size: 11, color: C.purple });
+      }
+      g.math('w_{i} = e^{s_{i} − m} / Σ_{j} e^{s_{j} − m}', 560, 374, { size: 24 });
+      g.text(`m = max = ${fmt(D.m)}  ·  Σ w = 1`, 830, 378, { size: 13, color: C.muted });
+    });
+    // O1
+    g.alpha(S.at(4), () => {
+      g.math('O1 = Σ w_{i} v_{i}', SX, 585, { size: 28, color: C.green });
+      g.text('(1×16)(16×8) = 1×8', SX + 2, 615, { size: 13, color: C.muted });
+      g.vec(D.O, 330, 572, { cw: 52, ch: 30, fill: '#dcfce7', size: 13 });
+    });
+    // tiles of 4
+    g.alpha(S.at(5), () => {
+      for (let j = 0; j < 4; j++) {
+        const y1 = MY + j * 64 - 3, y2 = y1 + 64 - 3;
+        g.rect(MX.K - 4, y1, 8 * 16 + 5, 61, { stroke: TILE[j], lw: 2.5, r: 4 });
+        g.rect(MX.V - 4, y1, 8 * 16 + 5, 61, { stroke: TILE[j], lw: 2.5, r: 4 });
+        g.text('tile ' + (j + 1), MX.K + 140, y1 + 30, { size: 13, weight: 700, color: TILE[j] });
+        g.rect(SX + j * 4 * cw - 3, SY - 4, 4 * cw + 2, 38, { stroke: TILE[j], lw: 2.5, r: 5 });
+      }
+    });
+  }
+};
+
+/* =====================================================================
+   SCENES 2 — online softmax (7.1 – 7.6) and I/O scaling (Part 8)
+   ===================================================================== */
+
+/* ---------- 7.1 split K/V into tiles, q1 stays in SRAM ---------- */
+SCENES.tiles = {
+  title: 'Split K and V into tiles of 4 — q1 stays in SRAM', H: 600,
+  steps: [
+    'Split the 16 keys into 4 tiles: K1–K4, K5–K8, K9–K12, K13–K16',
+    'Split V the same way — K5 always travels with V5, K6 with V6 …',
+    'Load q1 into SRAM once',
+    'Tile 1: bring K1→K4 and V1→V4, compute s1 s2 s3 s4',
+    'Tile 2: q1 stays in SRAM → bring K5→K8, V5→V8',
+    'Tile 3: q1 stays in SRAM → bring K9→K12, V9→V12',
+    'Tile 4: q1 stays in SRAM → bring K13→K16, V13→V16',
+    'q1 was fetched once and reused for every tile'
+  ],
+  dur: [1.6, 1.2, 1.0, 1.8, 1.8, 1.8, 1.8, 1.0],
+  draw(g, S) {
+    const D = DATA, st = S.step, cs = 12, gp = 3, KX = 95, VX = 255, MY = 80;
+    g.hand('K : 16 × 8', KX + 58, 44, { align: 'center', size: 28 });
+    g.hand('V : 16 × 8', VX + 58, 44, { align: 'center', size: 28 });
+    const cur = st >= 3 && st <= 6 ? st - 3 : -1;
+    const tileOf = r => Math.floor(r / 4);
+    g.matrix(KX, MY, 16, 8, { cs, gap: gp, fill: C.k, alpha: r => cur >= 0 && tileOf(r) !== cur ? 0.35 : 1 });
+    g.matrix(VX, MY, 16, 8, { cs, gap: gp, fill: C.v, alpha: r => cur >= 0 && tileOf(r) !== cur ? 0.35 : 1 });
+    for (let j = 0; j < 4; j++) {
+      const a = clamp(S.at(0) * 4 - j), y = MY + j * 60 - 3;
+      g.alpha(a, () => {
+        g.rect(KX - 4, y, 124, 57, { stroke: TILE[j], lw: 2.5, r: 4 });
+        g.text(`K${4 * j + 1}–K${4 * j + 4}`, KX - 10, y + 28, { size: 11, align: 'right', color: TILE[j], weight: 700 });
+      });
+      g.alpha(S.at(1) * a, () => {
+        g.rect(VX - 4, y, 124, 57, { stroke: TILE[j], lw: 2.5, r: 4 });
+        g.text(`V${4 * j + 1}–V${4 * j + 4}`, VX + 126, y + 28, { size: 11, color: TILE[j], weight: 700 });
+      });
+    }
+    if (st === 1) { const r = Math.floor(S.st * 3) % 16; g.line(KX + 117, MY + r * 15 + 6, VX - 4, MY + r * 15 + 6, { color: C.red, lw: 2 }); g.hand(`k${r + 1} ↔ v${r + 1}`, 175, MY + r * 15 - 6, { color: C.red, size: 20, align: 'center' }); }
+    // SRAM
+    const BX = 445, BY = 60, BW = 335, BH = 320;
+    g.alpha(Math.max(S.at(2), 0.25), () => g.box(BX, BY, BW, BH, 'SRAM (on-chip)', { fill: C.sram, stroke: C.green, dash: [7, 5], lw: 2 }));
+    // q1
+    const qa = S.at(2);
+    if (qa > 0) {
+      const y = lerp(-20, 100, ease(qa));
+      g.matrix(BX + 20, y, 1, 8, { cs: 16, gap: 3, fill: C.q });
+      g.hand('q1', BX + 185, y + 8, { color: C.green, size: 24 });
+      if (st >= 3) g.text('stays here', BX + 220, y + 8, { size: 12, color: C.muted });
+    }
+    // current tile in SRAM
+    const showTile = Math.min(3, st - 3);
+    if (st >= 3) {
+      const j = showTile, f = st <= 6 ? S.p : 1;
+      const fly = clamp(f / 0.55);
+      const kx = lerp(KX, BX + 20, ease(fly)), ky = lerp(MY + j * 60, 160, ease(fly));
+      const vx = lerp(VX, BX + 168, ease(fly)), vy = lerp(MY + j * 60, 160, ease(fly));
+      g.matrix(kx, ky, 4, 8, { cs: st <= 6 ? lerp(12, 15, fly) : 15, gap: 3, fill: C.k });
+      g.matrix(vx, vy, 4, 8, { cs: st <= 6 ? lerp(12, 15, fly) : 15, gap: 3, fill: C.v });
+      g.text(`K${4 * j + 1}–K${4 * j + 4}`, BX + 90, 248, { size: 12, align: 'center', color: TILE[j], weight: 700 });
+      g.text(`V${4 * j + 1}–V${4 * j + 4}`, BX + 240, 248, { size: 12, align: 'center', color: TILE[j], weight: 700 });
+      const sa = st <= 6 ? seg(f, 0.55, 0.85) : 1;
+      g.alpha(sa, () => {
+        g.math('q1 × K_{tile}ᵀ →', BX + 20, 290, { size: 20 });
+        for (let t = 0; t < 4; t++) {
+          const i = 4 * j + t;
+          g.rect(BX + 16 + t * 76, 310, 70, 44, { fill: TILE_L[j], stroke: TILE[j], lw: 1.5, r: 4 });
+          g.text('s' + (i + 1), BX + 51 + t * 76, 324, { size: 13, weight: 700, align: 'center', color: TILE[j] });
+          g.mono(fmt(D.s[i]), BX + 51 + t * 76, 342, { size: 12, align: 'center' });
+        }
+      });
+    }
+    // right: score blocks list
+    g.text('score blocks for q1', 805, 70, { size: 14, weight: 700 });
+    for (let j = 0; j < 4; j++) {
+      const a = st > 3 + j ? 1 : st === 3 + j ? seg(S.p, 0.6, 1) : 0;
+      g.alpha(a, () => {
+        g.math(`q1 × K${4 * j + 1}:K${4 * j + 4}`, 805, 105 + j * 70, { size: 21, color: TILE[j] });
+        g.math(`→ [s_{${4 * j + 1}}  s_{${4 * j + 2}}  s_{${4 * j + 3}}  s_{${4 * j + 4}}]`, 812, 135 + j * 70, { size: 21, color: TILE[j] });
+      });
+    }
+    // caption-ish ink
+    if (st >= 4 && st <= 6) { const j = st - 3; g.hand(`q1 stays in SRAM → bring K${4 * j + 1}→K${4 * j + 4},  V${4 * j + 1}→V${4 * j + 4}`, 400, 425, { color: C.green, size: 28 }); }
+    if (st === 3) g.hand('bring K1→K4,  V1→V4', 400, 425, { color: C.green, size: 28 });
+    // counters
+    if (st >= 2) {
+      const tilesLoaded = st >= 7 ? 4 : Math.max(0, st - 2);
+      g.rect(400, 470, 560, 80, { fill: '#fff', stroke: C.ink, r: 10 });
+      g.text('loads from HBM', 420, 492, { size: 13, color: C.muted });
+      g.text(`q1: 1`, 420, 524, { size: 22, weight: 800, color: C.orange, font: FONT.head });
+      g.text(`K/V tiles: ${tilesLoaded} of 4`, 560, 524, { size: 22, weight: 800, color: C.ink, font: FONT.head });
+      if (st >= 7) g.hand('q1 reused 4×', 860, 524, { color: C.green, size: 26, align: 'center' });
+    }
+  }
+};
+
+/* ---------- 7.2 why per-tile softmax + averaging is wrong ---------- */
+SCENES.wrongavg = {
+  title: 'Why normalising each tile separately is wrong', H: 540,
+  steps: [
+    'Tile 1 alone: softmax over only 4 scores — these 4 weights sum to 1',
+    'Do it for every tile: four local outputs O1, O2, O3, O4 — each with its own denominator',
+    'Tempting: average them. Compare with the true O1 … they do not match',
+    'Why: tiles carry different amounts of probability mass (sum1 … sum4)',
+    'So keep each tile\'s numerator and denominator. Combine first. Divide once at the end'
+  ],
+  dur: 1.2,
+  draw(g, S) {
+    const D = DATA, st = S.step;
+    g.text('local weights  e^s / sum_j', 230, 30, { size: 13, color: C.muted, align: 'center' });
+    g.text('local output  O_j  (1 × 8)', 760, 30, { size: 13, color: C.muted, align: 'center' });
+    for (let j = 0; j < 4; j++) {
+      const T = D.tiles[j], y = 52 + j * 62;
+      const a = j === 0 ? S.at(0) : st > 1 ? 1 : st === 1 ? clamp(S.p * 3 - (j - 1)) : 0;
+      g.alpha(a, () => {
+        g.text('Tile ' + (j + 1), 30, y + 16, { size: 15, weight: 800, color: TILE[j] });
+        T.lw.forEach((w, t) => { g.rect(100 + t * 66, y, 60, 32, { fill: TILE_L[j], stroke: TILE[j], r: 4 }); g.mono(fmt(w), 130 + t * 66, y + 17, { align: 'center', size: 12 }); });
+        g.text(`Σ = 1`, 375, y + 16, { size: 12, color: C.muted });
+        g.text(`sum${j + 1} = ${fmt(T.sum)}`, 420, y + 16, { size: 13, weight: 700, color: TILE[j] });
+        g.arrow(520, y + 16, 555, y + 16, { color: TILE[j] });
+        g.vec(T.O, 560, y + 3, { cw: 50, ch: 28, size: 11, fill: TILE_L[j] });
+      });
+    }
+    g.alpha(S.at(2), () => {
+      const avg = DATA.tiles[0].O.map((_, d) => sum(DATA.tiles.map(T => T.O[d])) / 4);
+      g.text('average of O1…O4', 545, 330, { size: 14, weight: 700, color: C.red, align: 'right' });
+      g.vec(avg, 560, 316, { cw: 50, ch: 28, size: 11, fill: C.redL });
+      g.text('true O1 (full softmax)', 545, 372, { size: 14, weight: 700, color: C.green, align: 'right' });
+      g.vec(D.O, 560, 358, { cw: 50, ch: 28, size: 11, fill: C.greenL });
+      g.cross(984, 345, 22);
+    });
+    g.alpha(S.at(3), () => {
+      g.text('probability mass per tile', 50, 330, { size: 14, weight: 700 });
+      const mx = Math.max(...D.tiles.map(T => T.sum));
+      D.tiles.forEach((T, j) => {
+        const h = 110 * T.sum / mx * S.at(3);
+        g.rect(60 + j * 85, 470 - h, 60, h, { fill: TILE[j], r: 4 });
+        g.text(`sum${j + 1}`, 90 + j * 85, 486, { size: 13, align: 'center', color: TILE[j], weight: 700 });
+        g.mono(fmt(T.sum, 1), 90 + j * 85, 470 - h - 10, { size: 11, align: 'center' });
+      });
+      g.hand('averaging gives every tile an equal vote — wrong', 400, 450, { color: C.red, size: 22 });
+    });
+    g.alpha(S.at(4), () => {
+      g.rect(400, 470, 580, 56, { fill: '#fff', stroke: C.green, lw: 2.5, r: 12 });
+      g.text('Keep numerator (O_j · sum_j) and denominator (sum_j).', 690, 489, { size: 15, weight: 700, align: 'center', color: C.green });
+      g.text('Combine first. Divide once at the end.', 690, 511, { size: 15, align: 'center', color: C.green });
+    });
+  }
+};
+
+/* ---------- 7.3 combine numerators and denominators (the board) ---------- */
+SCENES.sumcombine = {
+  title: 'Keep O_j · sum_j and sum_j — combine, then divide once', H: 690,
+  steps: [
+    'Tile 1:  O1 = (e^s1/sum1 … e^s4/sum1) × [v1…v4].  Store O1·sum1 and sum1 (running sum)',
+    'Tile 2:  add O2·sum2 to the numerator and sum2 to the denominator',
+    'Tile 3:  add O3·sum3 and sum3',
+    'Tile 4:  add O4·sum4 and sum4',
+    'Final:  (O1·sum1 + O2·sum2 + O3·sum3 + O4·sum4) / (sum1 + sum2 + sum3 + sum4)  =  U / L',
+    'Check with real numbers: identical to full softmax attention'
+  ],
+  dur: [1.6, 1.6, 1.6, 1.6, 1.6, 1.2],
+  draw(g, S) {
+    const D = DATA, st = S.step;
+    for (let j = 0; j < 4; j++) {
+      const y = 70 + j * 108, a = S.at(j);
+      if (a <= 0) continue;
+      const col = TILE[j], f = st > j ? 1 : S.raw;
+      g.alpha(clamp(f * 3), () => {
+        // bracket with 4 fractions
+        g.text('(', 20, y, { size: 64, font: FONT.hand, color: col });
+        for (let t = 0; t < 4; t++) {
+          const i = 4 * j + t + 1;
+          g.frac(`e^{s${i}}`, `sum${j + 1}`, 72 + t * 62, y, { size: 22, color: col });
+          g.mono(fmt(D.tiles[j].lw[t]), 72 + t * 62, y + 38, { size: 10, align: 'center', color: C.muted });
+        }
+        g.text(')', 296, y, { size: 64, font: FONT.hand, color: col });
+        g.text('×', 324, y - 2, { size: 26, color: col, align: 'center' });
+        const mm = g.matrix(345, y - 26, 4, 8, { cs: 9, gap: 3, fill: C.v });
+        g.text(`v${4 * j + 1}…v${4 * j + 4}`, 345 + mm.w / 2, y + 32, { size: 11, align: 'center', color: C.muted });
+      });
+      g.alpha(seg(f, 0.3, 0.6), () => {
+        g.text('=', 455, y, { size: 26, color: col, align: 'center' });
+        g.math(`O${j + 1}`, 476, y - 2, { size: 28, color: col });
+        g.text(`sum${j + 1} = ${fmt(D.tiles[j].sum)}`, 478, y + 26, { size: 11, color: C.muted });
+      });
+      // running column
+      g.alpha(seg(f, 0.6, 1), () => {
+        g.arrow(522, y, 640, y, { color: col });
+        g.math(`× sum${j + 1}`, 580, y - 14, { size: 19, color: col, align: 'center' });
+        let num = '', den = '';
+        for (let k = 0; k <= j; k++) { num += (k ? ' + ' : '') + `O${k + 1}·sum${k + 1}`; den += (k ? ' + ' : '') + `sum${k + 1}`; }
+        g.math(num, 650, y - 14, { size: j === 3 ? 16.5 : 21, color: C.purple });
+        g.math('running sum: ' + den, 650, y + 16, { size: j === 3 ? 16.5 : 19, color: C.purple });
+      });
+    }
+    if (st >= 1) g.brace(994, 60, Math.min(70 + st * 108, 400), { dir: -1, w: 8, color: C.purple });
+    // final fraction
+    g.alpha(S.at(4), () => {
+      const y = 528;
+      g.math('O1·sum1 + O2·sum2 + O3·sum3 + O4·sum4', 330, y - 26, { size: 27, align: 'center' });
+      g.line(80, y, 580, y, { color: C.purple, lw: 2 });
+      g.math('sum1 + sum2 + sum3 + sum4', 330, y + 28, { size: 27, align: 'center' });
+      g.text('=', 615, y, { size: 30, color: C.purple, align: 'center' });
+      g.frac('U', 'L', 680, y, { size: 36 });
+      const pe = S.at(4);
+      g.ellipse(680, y + 2, 52, 58, { stroke: C.purple, lw: 2.5, a0: -Math.PI / 2, a1: -Math.PI / 2 + Math.PI * 2 * pe });
+      g.text('U = running numerator', 760, y - 14, { size: 13, color: C.purple });
+      g.text('L = running denominator', 760, y + 10, { size: 13, color: C.purple });
+    });
+    g.alpha(S.at(5), () => {
+      const U = D.tiles.reduce((a, T) => vadd(a, T.num), new Array(8).fill(0)), L = sum(D.tiles.map(T => T.sum));
+      const O = vscale(U, 1 / L), diff = Math.max(...O.map((x, i) => Math.abs(x - D.O[i])));
+      g.text('U / L', 120, 612, { size: 15, weight: 700, color: C.purple, align: 'right' });
+      g.vec(O, 130, 598, { cw: 52, ch: 28, size: 12, fill: C.purpleL });
+      g.text('full softmax O1', 120, 650, { size: 15, weight: 700, color: C.green, align: 'right' });
+      g.vec(D.O, 130, 636, { cw: 52, ch: 28, size: 12, fill: C.greenL });
+      g.check(580, 630, 34);
+      g.text(`max difference: ${diff.toExponential(1)}`, 610, 630, { size: 14, weight: 700, color: C.green });
+      g.text('(only floating-point rounding)', 610, 652, { size: 12, color: C.muted });
+    });
+  }
+};
+
+/* ---------- 7.4 prove it with four numbers ---------- */
+const PARTS4 = [[[0], [1], [2, 3]], [[0, 1, 2], [3]], [[0], [1, 2], [3]], [[0], [1], [2], [3]], [[0, 1], [2, 3]], [[0], [1, 2, 3]], [[0, 1], [2], [3]]];
+SCENES.fournum = {
+  title: 'Prove it with four numbers', H: 560,
+  steps: [
+    'Exponentials 1, 2, 3, 4 — values 10, 20, 30, 40',
+    'Standard attention: (1·10 + 2·20 + 3·30 + 4·40) / (1+2+3+4) = 300 / 10 = 30',
+    'Split into two tiles: tile 1 → 50 / 3 ≈ 16.7,   tile 2 → 250 / 7 ≈ 35.7',
+    'Average the tile outputs: (16.7 + 35.7) / 2 ≈ 26.2 — not 30!',
+    'Keep numerators and denominators: (50 + 250) / (3 + 7) = 300 / 10 = 30 ✓',
+    'Exercise: any split works — press "New split" to try another'
+  ],
+  controls: [{ type: 'button', id: 'split', label: '🔀 New split (exercise)' }],
+  init(state) { state.ex = 0; },
+  onButton(id, state, stage) { state.ex = (state.ex + 1) % PARTS4.length; stage.go(5); stage.st = 0; },
+  dur: 1.2,
+  draw(g, S) {
+    const E = [1, 2, 3, 4], V = [10, 20, 30, 40], st = S.step;
+    const part = st === 5 ? PARTS4[S.state.ex] : [[0, 1], [2, 3]];
+    const cx = i => 170 + i * 200;
+    // tile outlines
+    if (st >= 2) part.forEach((grp, gi) => {
+      const x1 = cx(grp[0]) - 85, x2 = cx(grp[grp.length - 1]) + 85;
+      g.rect(x1, 40, x2 - x1, 140, { stroke: TILE[gi], lw: 3, r: 14, fill: mix('#ffffff', TILE[gi], 0.06) });
+      g.text('tile ' + (gi + 1), x1 + 12, 54, { size: 13, weight: 800, color: TILE[gi] });
+    });
+    E.forEach((e, i) => {
+      g.alpha(clamp(S.at(0) * 4 - i), () => {
+        g.rect(cx(i) - 70, 62, 140, 106, { fill: '#fff', stroke: C.ink, r: 10 });
+        g.text('e^s = ' + e, cx(i), 98, { size: 26, weight: 800, align: 'center', font: FONT.head, color: C.purple });
+        g.text('v = ' + V[i], cx(i), 138, { size: 22, weight: 700, align: 'center', color: C.green });
+      });
+    });
+    g.alpha(S.at(1), () => g.math('Full:  (1·10 + 2·20 + 3·30 + 4·40) / (1 + 2 + 3 + 4)  =  300 / 10  =  30', 80, 228, { size: 28, color: C.ink }));
+    if (st >= 2) {
+      const stats = part.map(grp => ({ num: sum(grp.map(i => E[i] * V[i])), den: sum(grp.map(i => E[i])) }));
+      g.alpha(st === 2 ? S.p : 1, () => stats.forEach((s, gi) => {
+        const grp = part[gi], x = (cx(grp[0]) + cx(grp[grp.length - 1])) / 2;
+        g.math(`num = ${s.num},  den = ${s.den}`, x, 284, { size: 22, color: TILE[gi], align: 'center' });
+        g.math(`local = ${(s.num / s.den).toFixed(1)}`, x, 314, { size: 22, color: TILE[gi], align: 'center' });
+      }));
+      const locals = stats.map(s => s.num / s.den);
+      const avg = sum(locals) / locals.length;
+      g.alpha(st >= 3 ? (st === 3 ? S.p : 1) : 0, () => {
+        g.math(`Average of local outputs:  (${locals.map(x => x.toFixed(1)).join(' + ')}) / ${locals.length}  ≈  ${avg.toFixed(1)}`, 80, 380, { size: 26, color: C.red });
+        g.cross(930, 378, 30);
+      });
+      g.alpha(st >= 4 ? (st === 4 ? S.p : 1) : 0, () => {
+        g.math(`Combine:  (${stats.map(s => s.num).join(' + ')}) / (${stats.map(s => s.den).join(' + ')})  =  300 / 10  =  30`, 80, 450, { size: 28, color: C.green });
+        g.check(930, 448, 34);
+      });
+      if (st === 5) g.hand('Try another split — the combined answer is always 30', 500, 520, { color: C.purple, size: 26, align: 'center' });
+    }
+  }
+};
+
+/* ---------- 7.5 running maximum: (m, l, u) ---------- */
+SCENES.runmax = {
+  title: 'Online softmax with a running maximum: (m, l, u)', H: 660,
+  steps: [
+    'Start every row with m = −∞, l = 0, u = 0.  (Subtracting the max keeps e^(s − m) ≤ 1 — no overflow)',
+    'Tile 1: first max → m = max(S1). Nothing to rescale yet',
+    'Tile 2: a bigger max appears → α = e^(m_old − m_new) < 1 shrinks the old l and u',
+    'Tile 3: max does not change → α = 1, just add the new tile',
+    'Tile 4: max grows again → rescale old l and u, then add',
+    'Divide once: O = u / l — identical to the full softmax'
+  ],
+  dur: 1.5,
+  draw(g, S) {
+    const D = DATA, st = S.step, R = D.run;
+    const sx = i => 60 + i * 53 + Math.floor(i / 4) * 12;
+    g.text('scores for q1:  s_i = q1 · k_i / √8', 60, 30, { size: 14, weight: 700 });
+    for (let i = 0; i < 16; i++) {
+      const j = Math.floor(i / 4), done = st >= j + 1;
+      const isMax = done && D.s[i] === R[j].ms;
+      g.rect(sx(i), 48, 49, 32, { fill: done ? TILE_L[j] : '#fff', stroke: isMax ? C.red : TILE[j], lw: isMax ? 3 : 1.2, r: 4 });
+      g.mono(fmt(D.s[i]), sx(i) + 24, 65, { size: 12, align: 'center' });
+    }
+    for (let j = 0; j < 4; j++) g.text('tile ' + (j + 1), sx(4 * j) + 104, 94, { size: 12, align: 'center', color: TILE[j], weight: 700 });
+    // table
+    const cols = [['tile', 50], ['max(S_j)', 110], ['m_old → m_new', 195], ['α', 345], ['rowsum(P_j)', 430], ['l_new', 545], ['u_new  (8 numbers)', 650]];
+    const ty = 125;
+    cols.forEach(([n, x]) => g.text(n, x, ty, { size: 12, weight: 700, color: C.muted }));
+    g.line(40, ty + 12, 975, ty + 12, { color: C.faint });
+    const rowY = r => ty + 38 + r * 46;
+    // init row
+    g.text('init', 50, rowY(0), { size: 14, weight: 700 });
+    g.text('m = −∞', 195, rowY(0), { size: 14, font: FONT.mono });
+    g.text('l = 0', 545, rowY(0), { size: 14, font: FONT.mono });
+    g.vec(new Array(8).fill(0), 650, rowY(0) - 13, { cw: 40, ch: 26, size: 10 });
+    for (let j = 0; j < 4; j++) {
+      const r = R[j], a = S.at(j + 1); if (a <= 0) continue;
+      const y = rowY(j + 1), col = TILE[j];
+      g.alpha(a, () => {
+        g.rect(40, y - 20, 935, 40, { fill: st === j + 1 ? TILE_L[j] : 'transparent', r: 6 });
+        g.text(String(j + 1), 60, y, { size: 15, weight: 800, color: col });
+        g.mono(fmt(r.ms), 110, y, { size: 13 });
+        g.mono(`${fmt(r.mo)} → ${fmt(r.mn)}`, 195, y, { size: 13, color: r.mn > r.mo ? C.red : C.ink, weight: r.mn > r.mo ? 700 : 400 });
+        g.mono(fmt(r.a, 3), 345, y, { size: 13, color: r.a < 1 ? C.red : C.green, weight: 700 });
+        g.mono(fmt(r.rs, 3), 430, y, { size: 13 });
+        g.mono(fmt(r.l, 3), 545, y, { size: 13, weight: 700, color: C.purple });
+        g.vec(r.u, 650, y - 13, { cw: 40, ch: 26, size: 10, fill: TILE_L[j] });
+      });
+    }
+    g.text('u: one number per head dimension (d = 8)', 650, rowY(4) + 30, { size: 11, color: C.muted });
+    // formulas
+    const fy = 435, F = [
+      ['m_{new} = max(m_{old}, max(S_j))', [1, 2, 3, 4]],
+      ['α = e^{m_{old} − m_{new}}', [2, 3, 4]],
+      ['P_j = e^{S_j − m_{new}}', [1, 2, 3, 4]],
+      ['l_{new} = α · l_{old} + rowsum(P_j)', [1, 2, 3, 4]],
+      ['u_{new} = α · u_{old} + P_j V_j', [1, 2, 3, 4]],
+      ['O = u / l', [5]]
+    ];
+    F.forEach(([f, on], i) => g.math(f, 60, fy + i * 36, { size: 25, color: on.includes(st) ? C.purple : '#a8a2b8' }));
+    // commentary box
+    g.rect(520, 410, 455, 230, { fill: '#fff', stroke: C.ink, r: 12 });
+    const bx = 540;
+    if (st === 0) {
+      g.text('Why subtract the max?', bx, 438, { size: 16, weight: 800 });
+      g.text('e^1000 overflows any float format.', bx, 468, { size: 14 });
+      g.text('e^(s − m) is always ≤ 1, and the common', bx, 492, { size: 14 });
+      g.text('factor e^(−m) cancels top and bottom.', bx, 514, { size: 14 });
+      g.text('We only know the row max after the last tile,', bx, 548, { size: 14, color: C.purple });
+      g.text('so we keep a RUNNING max and fix things up.', bx, 570, { size: 14, color: C.purple, weight: 700 });
+    } else if (st >= 1 && st <= 4) {
+      const r = R[st - 1];
+      g.text(`Tile ${st}`, bx, 438, { size: 18, weight: 800, color: TILE[st - 1] });
+      g.text(`tile max = ${fmt(r.ms)},  old m = ${fmt(r.mo)}`, bx, 470, { size: 14, font: FONT.mono });
+      if (st === 1) { g.text('First tile: m = tile max. α = 0 (no old state).', bx, 502, { size: 14 }); }
+      else if (r.mn > r.mo) {
+        g.text(`max went UP: ${fmt(r.mo)} → ${fmt(r.mn)}`, bx, 502, { size: 15, weight: 700, color: C.red });
+        g.text(`α = e^(${fmt(r.mo)} − ${fmt(r.mn)}) = ${fmt(r.a, 3)}`, bx, 528, { size: 14, font: FONT.mono });
+        g.text('old l and u were measured against the old max,', bx, 556, { size: 13 });
+        g.text('so shrink them by α before adding the new tile.', bx, 576, { size: 13 });
+      } else {
+        g.text('max did not change → α = 1', bx, 502, { size: 15, weight: 700, color: C.green });
+        g.text('nothing to rescale — just add this tile.', bx, 528, { size: 14 });
+      }
+      g.text(`l = ${fmt(r.a, 3)} × ${fmt(r.lo, 3)} + ${fmt(r.rs, 3)} = ${fmt(r.l, 3)}`, bx, 612, { size: 13, font: FONT.mono, color: C.purple });
+    } else {
+      g.text('O = u / l', bx, 438, { size: 18, weight: 800, color: C.purple });
+      g.vec(D.Ofa, bx, 455, { cw: 52, ch: 28, size: 11, fill: C.purpleL });
+      g.text('full softmax (all 16 at once)', bx, 506, { size: 13, weight: 700, color: C.green });
+      g.vec(D.O, bx, 518, { cw: 52, ch: 28, size: 11, fill: C.greenL });
+      const diff = Math.max(...D.Ofa.map((x, i) => Math.abs(x - D.O[i])));
+      g.check(bx + 18, 590, 30);
+      g.text(`same answer — max difference ${diff.toExponential(1)}`, bx + 45, 590, { size: 14, weight: 700, color: C.green });
+      g.text('Carried between tiles: just (m, l, u) per row', bx, 622, { size: 13, color: C.muted });
+    }
+  }
+};
+
+/* ---------- 7.6 from one query to a query tile ---------- */
+SCENES.qtiles = {
+  title: 'Query tiles × K/V tiles — S and P never land in HBM', H: 580,
+  steps: [
+    'The full score matrix S would be 16 × 16 — think of it as 4 × 4 blocks',
+    'Query tile 1 (rows 1–4) streams through all K/V tiles → output rows 1–4',
+    'Query tile 2 → output rows 5–8',
+    'Query tile 3 → output rows 9–12',
+    'Query tile 4 → output rows 13–16.  O is written; S and P never were',
+    'Causal attention: future blocks are skipped, diagonal blocks get element-level masking'
+  ],
+  controls: [{ type: 'check', id: 'causal', label: 'causal mask', value: false }],
+  dur: [1.0, 2.6, 2.6, 2.6, 2.6, 1.4],
+  draw(g, S) {
+    const st = S.step, causal = S.v.causal || st === 5;
+    const GX = 130, GY = 90, cs = 20, gp = 2, B = 4 * (cs + gp) + 6;
+    const cell = (i, k) => [GX + Math.floor(k / 4) * 6 + k * (cs + gp), GY + Math.floor(i / 4) * 6 + i * (cs + gp)];
+    g.hand('S : 16 × 16 (never stored)', GX + 180, 50, { align: 'center', size: 28 });
+    let qi = -1, kj = -1;
+    if (st >= 1 && st <= 4) { qi = st - 1; kj = Math.min(3, Math.floor(S.tl(st, 2.4) * 4)); if (S.tl(st, 2.4) >= 1) kj = 4; }
+    const visited = (bi, bj) => (st >= 5) || (bi < qi) || (bi === qi && bj < kj);
+    for (let i = 0; i < 16; i++) for (let k = 0; k < 16; k++) {
+      const bi = Math.floor(i / 4), bj = Math.floor(k / 4);
+      const [x, y] = cell(i, k);
+      const skip = causal && bj > bi, masked = causal && k > i;
+      let fill = '#fff';
+      if (skip) fill = '#e5e7eb';
+      else if (bi === qi && bj === kj) fill = masked ? '#f3f4f6' : TILE_L[bj];
+      else if (visited(bi, bj)) fill = masked ? '#f3f4f6' : '#f6f3fd';
+      g.rect(x, y, cs, cs, { fill, stroke: skip ? '#d1d5db' : '#b9b3c9', lw: 1 });
+      if (masked && !skip) g.line(x + 3, y + 3, x + cs - 3, y + cs - 3, { color: '#9ca3af', lw: 1 });
+    }
+    for (let b = 0; b < 4; b++) {
+      g.text('KV' + (b + 1), cell(0, 4 * b)[0] + 42, GY - 14, { size: 13, weight: 700, color: TILE[b], align: 'center' });
+      g.text('Q tile ' + (b + 1), GX - 12, cell(4 * b, 0)[1] + 42, { size: 13, weight: 700, align: 'right', color: qi === b ? C.orange : C.ink });
+    }
+    if (qi >= 0 && kj < 4) {
+      const [x, y] = cell(4 * qi, 4 * kj);
+      const skip = causal && kj > qi;
+      g.rect(x - 3, y - 3, B - 2, B - 2, { stroke: skip ? '#9ca3af' : C.red, lw: 3, r: 3 });
+      if (skip) g.text('skipped', x + B / 2 - 4, y + B / 2 - 3, { size: 12, weight: 700, color: C.muted, align: 'center' });
+      // on-chip mini block
+      g.box(515, 150, 110, 140, 'on chip', { fill: C.sram, stroke: C.green, dash: [5, 4], tsize: 12 });
+      if (!skip) for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) {
+        const m = causal && (4 * kj + c) > (4 * qi + r);
+        g.rect(533 + c * 19, 180 + r * 19, 17, 17, { fill: m ? '#f3f4f6' : TILE_L[kj], stroke: TILE[kj], lw: 1 });
+      }
+      g.text(skip ? 'nothing to do' : 'score block', 570, 270, { size: 11, align: 'center', color: C.muted });
+      g.arrow(x + B, y + B / 2, 512, 220, { color: C.green, dash: [4, 4], lw: 1.5 });
+    }
+    // output O
+    const OX = 690, OY = GY;
+    g.hand('O : 16 × 8', OX + 85, 50, { align: 'center', size: 28, color: C.green });
+    for (let i = 0; i < 16; i++) {
+      const bi = Math.floor(i / 4), done = st >= 5 || bi < qi || (bi === qi && kj >= 4);
+      for (let k = 0; k < 8; k++) g.rect(OX + k * 21, OY + Math.floor(i / 4) * 6 + i * (cs + gp), 19, cs, { fill: done ? '#dcfce7' : '#fff', stroke: done ? C.green : '#cbd5e1', lw: 1 });
+    }
+    if (qi >= 0 && kj >= 4) g.hand(`rows ${4 * qi + 1}–${4 * qi + 4} → HBM`, OX + 190, OY + qi * B + 40, { color: C.green, size: 22 });
+    // status
+    const nb = st >= 5 ? 16 : qi < 0 ? 0 : 4 * qi + Math.min(kj, 4);
+    g.rect(130, 480, 740, 80, { fill: '#fff', stroke: C.ink, r: 12 });
+    g.text(`blocks computed on chip: ${nb} / 16`, 155, 505, { size: 16, weight: 700 });
+    g.text('S or P bytes written to HBM: 0', 155, 535, { size: 16, weight: 700, color: C.green });
+    g.text('final O: 16 × 8 written to HBM', 560, 505, { size: 15, color: st >= 4 ? C.green : C.muted, weight: 700 });
+    if (causal) g.text('causal: grey blocks skipped entirely', 560, 535, { size: 14, color: C.muted });
+  }
+};
+
+/* ---------- Part 8: I/O scaling ---------- */
+SCENES.io = {
+  title: 'Why tiling reduces HBM traffic: O(Nd + N²d²/M)', H: 540,
+  steps: [
+    'x: sequence length N (log scale).  y: elements moved across HBM (log scale)',
+    'Materialised attention: ~ Nd + N²  — the N × N intermediates dominate',
+    'FlashAttention: ~ Nd + N²d²/M  — K/V re-reads, no N × N intermediates',
+    'The gap is the factor d²/M: big on-chip memory (M) compared with d² → much less traffic',
+    'Remember: the arithmetic is still ~N²·d. I/O improves; dense attention stays quadratic'
+  ],
+  controls: [
+    { type: 'range', id: 'n', label: 'N', min: 9, max: 17, value: 13, fmt: v => (2 ** v).toLocaleString() },
+    { type: 'select', id: 'd', label: 'head dim d', value: 128, options: [[64, '64'], [128, '128'], [256, '256']] },
+    { type: 'select', id: 'M', label: 'on-chip M (elements)', value: 100000, options: [[25000, '25 K'], [50000, '50 K'], [100000, '100 K'], [200000, '200 K']] }
+  ],
+  dur: 1.4,
+  draw(g, S) {
+    const d = +S.v.d, M = +S.v.M, st = S.step;
+    const X0 = 120, X1 = 900, Y0 = 440, Y1 = 60, lx0 = 9, lx1 = 17, ly0 = 5, ly1 = 11.5;
+    const X = lN => lerp(X0, X1, (lN - lx0) / (lx1 - lx0)), Y = v => lerp(Y0, Y1, (Math.log10(v) - ly0) / (ly1 - ly0));
+    const mat = N => 4 * N * d + 4 * N * N, fa = N => 2 * N * d + 2 * N * N * d * d / M;
+    g.arrow(X0, Y0, X1 + 30, Y0, { lw: 2 }); g.arrow(X0, Y0, X0, Y1 - 20, { lw: 2 });
+    for (let l = lx0; l <= lx1; l++) { g.line(X(l), Y0, X(l), Y0 + 6); g.text((2 ** l >= 1024 ? (2 ** l / 1024) + 'K' : 2 ** l), X(l), Y0 + 20, { size: 12, align: 'center', color: C.muted }); }
+    for (let e = 5; e <= 11; e++) { g.line(X0 - 6, Y(10 ** e), X0, Y(10 ** e)); g.text('10' + ['⁵', '⁶', '⁷', '⁸', '⁹', '¹⁰', '¹¹'][e - 5], X0 - 10, Y(10 ** e), { size: 12, align: 'right', color: C.muted }); }
+    g.text('sequence length N', (X0 + X1) / 2, Y0 + 44, { size: 14, align: 'center' });
+    g.text('elements moved (log)', X0, Y1 - 34, { size: 13, color: C.muted });
+    const curve = (fn, prog, col, w) => { const pts = []; for (let l = lx0; l <= lx0 + (lx1 - lx0) * prog + 1e-9; l += 0.05) pts.push([X(l), Y(fn(2 ** l))]); g.poly(pts, { color: col, lw: w }); };
+    if (S.at(1) > 0) { curve(mat, S.at(1), C.red, 4); g.alpha(S.at(1), () => g.hand('materialised: Nd + N²', X(15), Y(mat(2 ** 15)) - 30, { color: C.red, size: 26, align: 'right' })); }
+    if (S.at(2) > 0) { curve(fa, S.at(2), C.green, 4); g.alpha(S.at(2), () => g.hand('FlashAttention: Nd + N²d²/M', X(13.3), Y(fa(2 ** 13.3)) + 32, { color: C.green, size: 26 })); }
+    if (st >= 3) {
+      const lN = S.v.n, N = 2 ** lN, a = mat(N), b = fa(N);
+      g.line(X(lN), Y(a), X(lN), Y(b), { color: C.purple, lw: 3 });
+      g.circle(X(lN), Y(a), 6, { fill: C.red }); g.circle(X(lN), Y(b), 6, { fill: C.green });
+      const bx0 = 128, by0 = 64; g.rect(bx0, by0, 300, 110, { fill: '#fff', stroke: C.purple, r: 10 });
+      g.text(`N = ${N.toLocaleString()},  d = ${d},  M = ${M / 1000} K`, bx0 + 150, by0 + 22, { size: 13, align: 'center' });
+      g.text(`d²/M = ${(d * d / M).toFixed(3)}`, bx0 + 150, by0 + 48, { size: 16, weight: 700, align: 'center', color: C.purple });
+      g.text(`≈ ${(a / b).toFixed(1)}× fewer elements moved`, bx0 + 150, by0 + 76, { size: 18, weight: 800, align: 'center', color: C.green });
+      g.text('simplified model: constants ignored', bx0 + 150, by0 + 98, { size: 11, align: 'center', color: C.muted });
+    }
+    g.alpha(S.at(4), () => {
+      g.rect(530, 350, 410, 74, { fill: '#fff8ed', stroke: C.orange, r: 10, lw: 2 });
+      g.text('Important: I/O complexity improves.', 735, 376, { size: 16, weight: 800, align: 'center', color: C.orange });
+      g.text('Dense-attention arithmetic is still quadratic in N.', 735, 402, { size: 15, align: 'center' });
+    });
+  }
+};
+
+/* =====================================================================
+   SCENES 3 — FA2 scheduling, FA3 overlap + FP8, FA4 Blackwell redesign
+   ===================================================================== */
+
+/* ---------- Part 9: loop order FA1 vs FA2 ---------- */
+SCENES.fa2grid = {
+  title: 'FA1 vs FA2: which loop goes outside?', H: 560,
+  steps: [
+    'Rows = query tiles, columns = K/V tiles. Each cell = one Q-block × K/V-block piece of work',
+    'FA1: K/V tiles outer, Q tiles inner — O_i, l_i, m_i are read and written back each outer step',
+    'FA2: Q tiles outer — each Q block is its own job, running in parallel; O_i written once',
+    'Same online-softmax math. Better schedule: more independent work, fewer non-matmul ops'
+  ],
+  dur: 1.0,
+  draw(g, S) {
+    const st = S.step, cs = 60, gp = 6;
+    const grid = (x0, y0, title, col, cellState) => {
+      g.text(title, x0 + 129, y0 - 46, { size: 18, weight: 800, align: 'center', color: col, font: FONT.head });
+      for (let j = 0; j < 4; j++) g.text('KV' + (j + 1), x0 + j * (cs + gp) + cs / 2, y0 - 14, { size: 13, weight: 700, align: 'center', color: TILE[j] });
+      for (let i = 0; i < 4; i++) {
+        g.text('Q' + (i + 1), x0 - 14, y0 + i * (cs + gp) + cs / 2, { size: 13, weight: 700, align: 'right' });
+        for (let j = 0; j < 4; j++) {
+          const s = cellState(i, j);
+          g.rect(x0 + j * (cs + gp), y0 + i * (cs + gp), cs, cs, { fill: s.fill || '#fff', stroke: s.on ? C.red : '#bbb', lw: s.on ? 3.5 : 1.2, r: 6 });
+          if (s.n) g.text(s.n, x0 + j * (cs + gp) + cs / 2, y0 + i * (cs + gp) + cs / 2, { size: 15, weight: 700, align: 'center', color: s.c || C.ink });
+        }
+      }
+    };
+    // FA1 order: j outer, i inner
+    const t1 = st === 1 || st === 3 ? (S.st * 2.2) % 18 : (st >= 2 ? 16 : -1);
+    const k1 = Math.floor(t1);
+    grid(110, 120, 'FA1 — K/V tiles outer', C.purple, (i, j) => {
+      const idx = j * 4 + i;
+      if (st === 0) return { n: '×' };
+      return { fill: idx < k1 ? '#efe9fb' : '#fff', on: idx === k1, n: idx <= k1 ? String(idx + 1) : '' };
+    });
+    // FA1 O state column
+    g.alpha(st >= 1 ? 1 : 0.25, () => {
+      for (let i = 0; i < 4; i++) {
+        const on = (st === 1 || st === 3) && k1 < 16 && (k1 % 4) === i;
+        g.rect(390, 120 + i * 66 + 12, 56, 36, { fill: on ? C.redL : '#fff', stroke: on ? C.red : C.faint, r: 6 });
+        g.text('O' + (i + 1), 418, 120 + i * 66 + 30, { size: 13, weight: 700, align: 'center' });
+        if (on) g.text('⇄ HBM', 455, 120 + i * 66 + 30, { size: 12, weight: 700, color: C.red });
+      }
+    });
+    // FA2: rows in parallel
+    const t2 = st >= 2 ? (st === 2 || st === 3 ? (S.st * 0.9) % 5.5 : 4) : -1;
+    const k2 = Math.floor(t2);
+    grid(600, 120, 'FA2 — Q tiles outer', C.green, (i, j) => {
+      if (st < 2) return { n: '×' };
+      return { fill: j < k2 ? TILE_L[i] : '#fff', on: j === k2, n: j <= k2 ? 'TB' + (i + 1) : '', c: TILE[i] };
+    });
+    if (st >= 2) for (let i = 0; i < 4; i++) {
+      const done = k2 >= 4;
+      g.rect(880, 120 + i * 66 + 12, 56, 36, { fill: done ? C.greenL : '#fff', stroke: done ? C.green : C.faint, r: 6 });
+      g.text('O' + (i + 1), 908, 120 + i * 66 + 30, { size: 13, weight: 700, align: 'center' });
+      if (done) g.text('write once', 908, 120 + i * 66 + 58, { size: 10, align: 'center', color: C.green });
+    }
+    const code = (x, y, lines, col) => { g.rect(x, y, 380, 96, { fill: '#fff', stroke: col, r: 8 }); lines.forEach((l, i) => g.mono(l, x + 14, y + 22 + i * 24, { size: 13, color: i === 0 ? col : C.ink })); };
+    g.alpha(Math.max(S.at(1), 0.3), () => code(60, 410, ['for each K/V tile:      # outer', '    for each Q tile:    # inner', '        update output state'], C.purple));
+    g.alpha(Math.max(S.at(2), 0.3), () => code(560, 410, ['for each Q tile:        # outer', '    for each K/V tile:  # inner', '        update this Q tile\'s state'], C.green));
+    g.alpha(S.at(3), () => {
+      g.text('FA1: remove the full N × N HBM intermediates', 250, 530, { size: 14, weight: 700, color: C.purple, align: 'center' });
+      g.text('FA2: expose more independent Q-block work', 750, 530, { size: 14, weight: 700, color: C.green, align: 'center' });
+    });
+  }
+};
+
+/* ---------- Part 9: how many SMs get work? ---------- */
+const NV2 = [512, 1024, 2048, 4096, 8192, 16384, 32768];
+SCENES.smutil = {
+  title: 'Batch size 1, a long prompt: how many of the 132 SMs get work?', H: 520,
+  steps: [
+    'An H100 SXM has 132 SMs waiting for thread blocks',
+    'FA1-style mapping: one thread block per (batch, head) → B × H jobs',
+    'FA2: also split along the sequence → B × H × (N / block) jobs — every SM gets work',
+    'Decode: only 1 new query row — nothing to split along Q. Split the KV cache instead (Flash-Decoding)'
+  ],
+  controls: [
+    { type: 'range', id: 'b', label: 'batch B', min: 1, max: 16, value: 1 },
+    { type: 'range', id: 'h', label: 'heads H', min: 1, max: 64, value: 8 },
+    { type: 'range', id: 'n', label: 'seq N', min: 0, max: 6, value: 4, fmt: v => NV2[v].toLocaleString() }
+  ],
+  dur: 1.2,
+  draw(g, S) {
+    const st = S.step, B = S.v.b, H = S.v.h, N = NV2[S.v.n], blk = 128;
+    let jobs = 0, label = '', col = C.ink;
+    if (st === 1) { jobs = B * H; label = `B × H = ${B} × ${H} = ${jobs} thread blocks`; col = C.purple; }
+    if (st === 2) { jobs = B * H * Math.ceil(N / blk); label = `B × H × N/${blk} = ${B} × ${H} × ${Math.ceil(N / blk)} = ${jobs.toLocaleString()} thread blocks`; col = C.green; }
+    if (st === 3) { const ch = Math.max(1, Math.ceil(N / 1024)); jobs = B * H * ch; label = `decode: B × H × KV chunks = ${B} × ${H} × ${ch} = ${jobs}`; col = C.blue; }
+    const lit = Math.min(132, jobs), shown = Math.floor(lit * S.at(st));
+    for (let i = 0; i < 132; i++) {
+      const x = 50 + (i % 12) * 36, y = 60 + Math.floor(i / 12) * 36, on = i < shown;
+      g.rect(x, y, 30, 30, { fill: on ? mix('#ffffff', col, 0.55 + 0.2 * Math.sin(S.t * 5 + i)) : '#eceae4', stroke: on ? col : '#cfccc4', lw: 1, r: 4 });
+    }
+    g.text('132 SMs', 266, 470, { size: 14, align: 'center', color: C.muted });
+    g.rect(520, 60, 450, 260, { fill: '#fff', stroke: C.ink, r: 12 });
+    if (st === 0) {
+      g.text('Use the sliders: batch, heads, sequence length.', 540, 100, { size: 15 });
+      g.text('Count the independent jobs each schedule creates.', 540, 128, { size: 15 });
+    } else {
+      g.text(['', 'FA1 mapping', 'FA2 mapping', 'Decode (split-KV)'][st], 540, 94, { size: 20, weight: 800, color: col, font: FONT.head });
+      g.wrap(label, 540, 128, 410, 22, { size: 15, weight: 700 });
+      const pct = Math.round(100 * lit / 132);
+      g.text(`busy SMs: ${lit} / 132  (${pct}%)`, 540, 196, { size: 22, weight: 800, color: pct < 50 ? C.red : C.green, font: FONT.head });
+      if (jobs > 132) g.text(`${Math.ceil(jobs / 132)} waves of thread blocks`, 540, 228, { size: 14, color: C.muted });
+      if (st === 1 && pct < 50) g.hand('lots of idle SMs!', 540, 270, { color: C.red, size: 28 });
+      if (st === 3) { g.text('each chunk gives partial (m, l, u)', 540, 260, { size: 14 }); g.text('→ merged with the online-softmax rule', 540, 284, { size: 14, color: C.blue }); }
+    }
+    g.text('Simplified: one thread block per SM at a time; real occupancy depends on registers,', 520, 350, { size: 12, color: C.muted });
+    g.text('shared memory and the kernel configuration. KV chunk = 1,024 tokens here.', 520, 368, { size: 12, color: C.muted });
+  }
+};
+
+/* ---------- Part 10: FA3 pipeline overlap ---------- */
+SCENES.fa3pipe = {
+  title: 'FA3 on Hopper: overlap loads, matmuls and softmax', H: 610,
+  steps: [
+    'Three kinds of work: TMA loads tiles, tensor cores run WGMMA, other warps do softmax',
+    'Without overlap: load → matmul → softmax → load … each unit waits for the others',
+    'FA3: the producer prefetches, softmax of tile i runs while the matmul of tile i+1 runs',
+    'Same tiles, same math — the idle gaps are gone (durations are illustrative)',
+    'Warp specialisation: a producer warpgroup feeds an SMEM ring buffer; consumer warpgroups ping-pong'
+  ],
+  dur: [1.0, 4.5, 3.5, 1.0, 1.2],
+  draw(g, S) {
+    const st = S.step, u = 38, X0 = 190, n = 6, LD = 1, MM = 1.2, SM = 1.0;
+    const lanes = ['TMA (load)', 'Tensor cores (WGMMA)', 'Softmax warps'], lc = [C.blue, C.orange, C.purple];
+    const seq = [], ovl = [];
+    for (let i = 0; i < n; i++) {
+      const b = i * (LD + MM + SM);
+      seq.push([0, b, LD, i], [1, b + LD, MM, i], [2, b + LD + MM, SM, i]);
+      ovl.push([0, i * MM, LD, i], [1, LD + i * MM, MM, i], [2, LD + (i + 1) * MM, SM, i]);
+    }
+    const tSeq = n * (LD + MM + SM), tOvl = LD + n * MM + SM;
+    const drawTL = (y0, title, blocks, total, cursor, a) => g.alpha(a, () => {
+      g.text(title, 20, y0 - 18, { size: 16, weight: 800, font: FONT.head });
+      lanes.forEach((l, k) => { g.text(l, X0 - 12, y0 + k * 42 + 16, { size: 12, align: 'right', color: lc[k], weight: 700 }); g.rect(X0, y0 + k * 42, total * u + 4, 32, { fill: '#f1f1ed', r: 4 }); });
+      blocks.forEach(([k, s, d, i]) => {
+        if (cursor <= s) return;
+        const w = Math.min(d, cursor - s) * u;
+        g.rect(X0 + s * u + 1, y0 + k * 42 + 2, w - 2, 28, { fill: mix('#ffffff', lc[k], 0.35 + 0.1 * (i % 2)), stroke: lc[k], lw: 1.2, r: 4 });
+        if (w > 18) g.text(['L', 'MM', 'SM'][k] + (i + 1), X0 + s * u + w / 2, y0 + k * 42 + 17, { size: 11, weight: 700, align: 'center' });
+      });
+      if (cursor < total) g.line(X0 + cursor * u, y0 - 6, X0 + cursor * u, y0 + 128, { color: C.red, lw: 2 });
+    });
+    const c1 = st === 1 ? S.tl(1, 4.2) * tSeq : st > 1 ? tSeq : 0;
+    const c2 = st === 2 ? S.tl(2, 3.2) * tOvl : st > 2 ? tOvl : 0;
+    drawTL(60, 'Sequential (no overlap)', seq, tSeq, c1, st === 0 ? 0.5 : 1);
+    drawTL(250, 'FlashAttention-3 (overlapped)', ovl, tOvl, c2, st < 2 ? 0.35 : 1);
+    if (st === 0) {
+      g.rect(600, 250, 380, 120, { fill: '#fff', stroke: C.ink, r: 10 });
+      [['TMA', 'async tensor-tile copies HBM → SMEM', C.blue], ['WGMMA', 'async warpgroup matrix multiply', C.orange], ['Warp spec.', 'producer / consumer roles', C.purple]].forEach(([a, b, c], i) => { g.text(a, 615, 280 + i * 32, { size: 14, weight: 800, color: c }); g.text(b, 715, 280 + i * 32, { size: 13 }); });
+    }
+    g.alpha(S.at(3), () => {
+      const yb = 400;
+      g.rect(X0, yb, tSeq * u, 14, { fill: C.redL, stroke: C.red, r: 7 });
+      g.rect(X0, yb + 22, tOvl * u, 14, { fill: C.greenL, stroke: C.green, r: 7 });
+      g.text(`sequential: ${tSeq.toFixed(1)} units`, X0 + tSeq * u - 8, yb + 7, { size: 12, color: C.red, weight: 700, align: 'right' });
+      g.text(`overlapped: ${tOvl.toFixed(1)} units`, X0 + tOvl * u + 8, yb + 29, { size: 12, color: C.green, weight: 700 });
+      g.hand('softmax of tile i hides under the matmul of tile i+1', 640, 452, { color: C.purple, size: 22, align: 'center' });
+    });
+    g.alpha(S.at(4), () => {
+      const y = 470;
+      g.box(40, y, 220, 90, 'Producer warpgroup', { fill: C.blueL, stroke: C.blue, tsize: 14 });
+      g.text('issues TMA loads', 150, y + 55, { size: 13, align: 'center' });
+      g.box(330, y, 300, 90, 'SMEM ring buffer', { fill: C.sram, stroke: C.green, tsize: 14 });
+      for (let k = 0; k < 4; k++) { const full = ((Math.floor(S.t * 2) + k) % 4) < 2; g.rect(350 + k * 68, y + 38, 58, 34, { fill: full ? '#86efac' : '#fff', stroke: C.green, r: 4 }); g.text('stage ' + (k + 1), 379 + k * 68, y + 55, { size: 11, align: 'center' }); }
+      g.box(700, y - 6, 260, 46, 'Consumer WG 1: MMA + softmax', { fill: C.orangeL, stroke: C.orange, tsize: 13 });
+      g.box(700, y + 52, 260, 46, 'Consumer WG 2: MMA + softmax', { fill: C.purpleL, stroke: C.purple, tsize: 13 });
+      g.arrow(262, y + 45, 326, y + 45, { color: C.blue, lw: 2 });
+      g.arrow(632, y + 40, 696, y + 18, { color: C.green, lw: 2 }); g.arrow(632, y + 50, 696, y + 74, { color: C.green, lw: 2 });
+      g.text('ping-pong', 830, y + 112, { size: 13, align: 'center', color: C.muted, weight: 700 });
+    });
+  }
+};
+
+/* ---------- Part 10: FP8 and incoherent processing ---------- */
+const FP8 = (() => {
+  const r = rng(2024), n = 16;
+  const x = Array.from({ length: n }, () => randn(r) * 0.6); x[5] = 8.0;
+  const sg = Array.from({ length: n }, () => (r() < 0.5 ? -1 : 1));
+  const Hd = (i, j) => { let b = i & j, c = 0; while (b) { c += b & 1; b >>= 1; } return (c % 2 ? -1 : 1) / Math.sqrt(n); };
+  const rot = v => v.map((_, i) => sum(v.map((vj, j) => Hd(i, j) * sg[j] * vj)));
+  const unrot = y => y.map((_, j) => sg[j] * sum(y.map((yi, i) => Hd(i, j) * yi)));
+  const L = 7, quant = v => { const s = Math.max(...v.map(Math.abs)) / L; return { q: v.map(z => Math.round(z / s) * s), s }; };
+  const rms = (a, b) => Math.sqrt(sum(a.map((z, i) => (z - b[i]) ** 2)) / a.length);
+  const qa = quant(x), y = rot(x), qy = quant(y), back = unrot(qy.q);
+  // error on the non-outlier coordinates is what the viewer sees
+  const small = (a, b) => rms(a.filter((_, i) => i !== 5), b.filter((_, i) => i !== 5));
+  return { x, y, qa, qy, back, eA: rms(x, qa.q), eB: rms(x, back), sA: small(x, qa.q), sB: small(x, back), zeroed: x.filter((z, i) => i !== 5 && qa.q[i] === 0).length };
+})();
+SCENES.fp8 = {
+  title: 'FP8 and incoherent processing: spread the outlier before quantising', H: 540,
+  steps: [
+    'Activations often contain a few huge outliers',
+    'Quantise: the outlier sets the scale, so small values get crushed (many become 0)',
+    'Multiply by a random orthogonal matrix first: the outlier is spread across all dimensions',
+    'Now quantise and transform back: much smaller error',
+    'Attention scores are unchanged: (QM)(KM)ᵀ = Q M Mᵀ Kᵀ = QKᵀ because M Mᵀ = I'
+  ],
+  dur: 1.3,
+  draw(g, S) {
+    const F = FP8, st = S.step;
+    const panel = (x0, y0, w, title, vals, qv, a, col) => g.alpha(a, () => {
+      const h = 150, mid = y0 + h / 2, sc = (h / 2 - 6) / 8.5, bw = w / vals.length;
+      g.rect(x0, y0, w, h, { fill: '#fff', stroke: C.faint, r: 8 });
+      g.text(title, x0, y0 - 14, { size: 14, weight: 800, color: col });
+      g.line(x0, mid, x0 + w, mid, { color: C.faint });
+      vals.forEach((v, i) => { const bh = v * sc; g.rect(x0 + i * bw + 3, bh > 0 ? mid - bh : mid, bw - 6, Math.abs(bh), { fill: mix('#ffffff', col, 0.55), r: 2 }); });
+      if (qv) {
+        const s = qv.s;
+        for (let k = -7; k <= 7; k++) g.line(x0, mid - k * s * sc, x0 + w, mid - k * s * sc, { color: 'rgba(220,38,38,.18)', lw: 1 });
+        qv.q.forEach((v, i) => g.circle(x0 + i * bw + bw / 2, mid - v * sc, 4, { fill: C.red }));
+      }
+    });
+    panel(50, 70, 420, 'Original activations (one outlier)', F.x, st >= 1 ? F.qa : null, 1, C.blue);
+    g.alpha(S.at(1), () => {
+      g.text(`${F.zeroed} of 15 small values rounded to 0`, 50, 252, { size: 14, weight: 700, color: C.red });
+      g.text(`RMS error on the small values: ${F.sA.toFixed(3)}`, 50, 276, { size: 14, color: C.red });
+    });
+    panel(530, 70, 420, 'After random orthogonal mix  y = M·x', F.y, st >= 3 ? F.qy : null, S.at(2), C.purple);
+    g.alpha(S.at(2), () => { g.arrow(475, 145, 525, 145, { color: C.purple, lw: 3 }); g.text('M', 500, 130, { size: 16, weight: 800, align: 'center', color: C.purple }); });
+    g.alpha(S.at(3), () => {
+      panel(530, 320, 420, 'Quantise y, then transform back: Mᵀ·quant(y)', F.back, null, 1, C.green);
+      g.text(`RMS error on the small values: ${F.sB.toFixed(3)}`, 530, 492, { size: 14, weight: 700, color: C.green });
+      g.text(`(${(F.sA / F.sB).toFixed(1)}× smaller)`, 830, 492, { size: 14, weight: 700, color: C.green });
+    });
+    g.alpha(S.at(4), () => {
+      g.rect(50, 330, 440, 120, { fill: '#fff', stroke: C.purple, r: 12, lw: 2 });
+      g.math('(QM)(KM)ᵀ = Q M Mᵀ Kᵀ = QKᵀ', 270, 372, { size: 28, align: 'center' });
+      g.text('M is orthogonal, so M Mᵀ = I — the scores do not change.', 270, 412, { size: 14, align: 'center' });
+    });
+    g.text('Toy uniform quantiser (15 levels) to make the effect visible — real FP8 levels are non-uniform. Still a lower-precision path.', 500, 525, { size: 11, align: 'center', color: C.muted });
+  }
+};
+
+/* ---------- Part 11: asymmetric scaling ---------- */
+SCENES.fa4scale = {
+  title: 'Blackwell: matmul got 2× faster — exp and shared memory did not', H: 540,
+  steps: [
+    'Hopper per-SM resources (normalised to 1)',
+    'B200 (FA4 paper\'s analysis): BF16 tensor-core throughput doubles — 4,096 → 8,192 ops/clock/SM',
+    'Exponential unit: 16 ops/clock/SM.  Shared-memory read: 128 B/clock/SM.  Same as before',
+    'One 128 × 128 tile on Hopper: the matmuls are the longest stage',
+    'Same tile on Blackwell: matmul time halves and now equals exp time — the bottleneck moved'
+  ],
+  dur: 1.3,
+  draw(g, S) {
+    const st = S.step, base = 400, U = 130;
+    const groups = [['Tensor cores', '4,096', '8,192', 1, 2], ['Exp unit (MUFU)', '16', '16', 1, 1], ['SMEM read', '128 B', '128 B', 1, 1]];
+    g.text('per clock, per SM', 60, 40, { size: 14, color: C.muted });
+    groups.forEach(([n, a, b, va, vb], i) => {
+      const x = 70 + i * 145;
+      const ha = U * va * S.at(0), hb = U * lerp(1, vb, S.at(1)) * S.at(1);
+      g.rect(x, base - ha, 50, ha, { fill: '#c4b5fd', stroke: C.purple, r: 3 });
+      g.alpha(S.at(1), () => g.rect(x + 56, base - hb, 50, hb, { fill: '#fdba74', stroke: C.orange, r: 3 }));
+      g.text(a, x + 25, base - ha - 12, { size: 12, align: 'center', color: C.purple, weight: 700 });
+      g.alpha(S.at(1), () => g.text(b, x + 81, base - hb - 12, { size: 12, align: 'center', color: C.orange, weight: 700 }));
+      g.text(n, x + 53, base + 20, { size: 13, align: 'center', weight: 700 });
+      if (st >= 2 && i > 0) g.alpha(S.at(2), () => g.hand('same!', x + 53, base - 170, { color: C.red, size: 26, align: 'center' }));
+    });
+    g.line(50, base, 490, base, { lw: 2 });
+    g.rect(70, 450, 14, 14, { fill: '#c4b5fd', stroke: C.purple }); g.text('Hopper', 92, 457, { size: 13 });
+    g.alpha(S.at(1), () => { g.rect(180, 450, 14, 14, { fill: '#fdba74', stroke: C.orange }); g.text('Blackwell B200', 202, 457, { size: 13 }); });
+    // tile budget
+    const rows = [['MMA (2 GEMMs)', 2048, 1024], ['exp (16,384 scores)', 1024, 1024], ['SMEM (K,V tiles)', 512, 512]];
+    const X = 560, sc = 230 / 2048;
+    g.alpha(S.at(3), () => {
+      g.text('one 128 × 128 tile, d = 128 — back-of-envelope clocks', X, 70, { size: 14, weight: 700 });
+      const draw = (y0, which, lab, col, a) => g.alpha(a, () => {
+        g.text(lab, X, y0, { size: 15, weight: 800, color: col, font: FONT.head });
+        const vals = rows.map(r => which ? r[2] : r[1]), mx = Math.max(...vals);
+        rows.forEach((r, i) => {
+          const v = vals[i], y = y0 + 18 + i * 32, w = v * sc * a;
+          g.rect(X + 130, y, w, 22, { fill: v === mx ? (which ? C.red : C.orange) : '#d6d3cc', r: 4 });
+          g.text(r[0], X + 122, y + 11, { size: 11, align: 'right' });
+          g.mono(v + ' clk', X + 136 + w, y + 11, { size: 11, color: v === mx ? C.red : C.muted });
+        });
+      });
+      draw(110, 0, 'Hopper', C.purple, S.at(3));
+      draw(260, 1, 'Blackwell', C.orange, S.at(4));
+    });
+    g.alpha(S.at(4), () => {
+      g.hand('matmul halves → exp is now just as slow', 760, 405, { color: C.red, size: 26, align: 'center' });
+      g.text('MMA: 2 × (2·128·128·128) = 8.4 M FLOPs ÷ 8,192 per clk ≈ 1,024 clk', X, 445, { size: 11, color: C.muted });
+      g.text('exp: 128·128 = 16,384 ÷ 16 per clk = 1,024 clk', X, 463, { size: 11, color: C.muted });
+      g.text('SMEM: K + V tiles = 64 KB ÷ 128 B per clk = 512 clk (rough)', X, 481, { size: 11, color: C.muted });
+    });
+  }
+};
+
+/* ---------- Part 11: FA4 pipeline + TMEM ---------- */
+SCENES.fa4pipe = {
+  title: 'FA4 forward: ping-pong softmax warpgroups + tensor memory (TMEM)', H: 580,
+  steps: [
+    'Specialised roles: one warp drives TMA + MMA, two softmax warpgroups, one correction warpgroup',
+    'Two Q tiles in flight (A and B): while the tensor cores work on one, the other is in softmax',
+    'Score and output accumulators live in TMEM (256 KB per SM) — not in scarce registers',
+    'The stages overlap, so the slow exp work hides behind the fast matmuls'
+  ],
+  dur: [1.0, 5.0, 1.2, 1.0],
+  draw(g, S) {
+    const st = S.step, X0 = 250, u = 46;
+    const lanes = [['MMA warp (TMA + MMA)', C.orange], ['Softmax warpgroup A', C.purple], ['Softmax warpgroup B', C.blue], ['Correction warpgroup', C.teal]];
+    lanes.forEach(([l, c], k) => { g.text(l, X0 - 14, 70 + k * 52 + 16, { size: 13, align: 'right', color: c, weight: 700 }); g.rect(X0, 70 + k * 52, 15 * u, 34, { fill: '#f1f1ed', r: 4 }); });
+    const blocks = [];
+    for (let i = 0; i < 6; i++) {
+      const who = i % 2, t0 = i * 1.0;
+      blocks.push([0, t0, 0.95, who ? 'S_B' : 'S_A', who]);
+      blocks.push([1 + who, t0 + 1.0, 1.85, 'softmax ' + (who ? 'B' : 'A'), who]);
+      blocks.push([3, t0 + 2.85, 0.5, 'fix', who]);
+    }
+    const cur = st === 1 ? S.tl(1, 4.6) * 12.5 : st > 1 ? 12.5 : 0;
+    blocks.forEach(([k, s, d, lab, who]) => {
+      if (cur <= s) return; const w = Math.min(d, cur - s) * u;
+      const col = lanes[k][1];
+      g.rect(X0 + s * u + 1, 70 + k * 52 + 2, w - 2, 30, { fill: mix('#ffffff', who ? C.blue : C.purple, k === 0 ? 0.35 : 0.25), stroke: col, lw: 1.3, r: 4 });
+      if (w > 34) g.text(lab, X0 + s * u + w / 2, 70 + k * 52 + 18, { size: 11, weight: 700, align: 'center' });
+    });
+    if (st === 1 && cur < 12.5) g.line(X0 + cur * u, 60, X0 + cur * u, 280, { color: C.red, lw: 2 });
+    g.alpha(st === 0 ? 1 : 0, () => g.hand('roles first — then watch the timeline', 600, 30, { color: C.purple, size: 24, align: 'center' }));
+    // TMEM
+    g.alpha(Math.max(0.3, S.at(2)), () => {
+      g.box(250, 320, 520, 170, 'TMEM — tensor memory, 256 KB per SM', { fill: '#fff7ed', stroke: C.orange, tsize: 14, lw: 2 });
+      const slot = (x, lab, col, on) => { g.rect(x, 360, 112, 50, { fill: on ? mix('#ffffff', col, 0.4) : '#fff', stroke: col, lw: on ? 3 : 1.5, r: 6 }); g.text(lab, x + 56, 385, { size: 13, weight: 700, align: 'center' }); };
+      const ph = (S.t * 0.8) % 2, onA = ph < 1;
+      slot(270, 'S / P  (A)', C.purple, st >= 2 && onA); slot(392, 'S / P  (B)', C.blue, st >= 2 && !onA);
+      slot(514, 'O acc (A)', C.purple, st >= 2 && !onA); slot(636, 'O acc (B)', C.blue, st >= 2 && onA);
+      g.text('tensor cores write accumulators straight into TMEM', 510, 440, { size: 13, align: 'center' });
+      g.text('→ frees registers, allows bigger 128 × 128 MMA tiles', 510, 462, { size: 13, align: 'center', color: C.muted });
+    });
+    g.alpha(S.at(2), () => {
+      g.box(800, 330, 180, 150, 'Registers', { fill: C.redL, stroke: C.red, tsize: 14 });
+      g.text('scarce: big accumulator', 890, 380, { size: 12, align: 'center' });
+      g.text('tiles here = pressure,', 890, 400, { size: 12, align: 'center' });
+      g.text('fewer resident warps', 890, 420, { size: 12, align: 'center' });
+    });
+    g.alpha(S.at(3), () => g.hand('exp-heavy softmax overlaps the matmuls of the other tile', 500, 540, { color: C.green, size: 26, align: 'center' }));
+  }
+};
+
+/* ---------- Part 11: software exp2 ---------- */
+const EXP2 = (() => {
+  // least-squares cubic for 2^f on [0,1] (illustrative fit, not the paper's coefficients)
+  const pts = 400, A = [[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]], b = [0, 0, 0, 0];
+  for (let i = 0; i <= pts; i++) { const f = i / pts, y = 2 ** f, p = [1, f, f * f, f * f * f]; for (let r = 0; r < 4; r++) { b[r] += p[r] * y; for (let c = 0; c < 4; c++) A[r][c] += p[r] * p[c]; } }
+  for (let i = 0; i < 4; i++) { let mx = i; for (let r = i + 1; r < 4; r++) if (Math.abs(A[r][i]) > Math.abs(A[mx][i])) mx = r;[A[i], A[mx]] = [A[mx], A[i]];[b[i], b[mx]] = [b[mx], b[i]]; for (let r = i + 1; r < 4; r++) { const f = A[r][i] / A[i][i]; for (let c = i; c < 4; c++) A[r][c] -= f * A[i][c]; b[r] -= f * b[i]; } }
+  const cf = [0, 0, 0, 0]; for (let i = 3; i >= 0; i--) { let s = b[i]; for (let c = i + 1; c < 4; c++) s -= A[i][c] * cf[c]; cf[i] = s / A[i][i]; }
+  const poly = f => ((cf[3] * f + cf[2]) * f + cf[1]) * f + cf[0];
+  const bf16 = x => { const u = new Float32Array([x]), i = new Uint32Array(u.buffer); const r = ((i[0] >>> 16) & 1) + 0x7fff; i[0] = (i[0] + r) & 0xffff0000; return u[0]; };
+  const ulp = x => { const e = Math.floor(Math.log2(Math.abs(x))); return 2 ** (e - 7); };
+  let maxRel = 0, ok = 0, same = 0, N = 20000;
+  for (let i = 0; i < N; i++) { const f = i / N, t = 2 ** f, p = poly(f); maxRel = Math.max(maxRel, Math.abs(p - t) / t); if (bf16(p) === bf16(t)) same++; if (Math.abs(bf16(p) - bf16(t)) <= ulp(t) * 1.0001) ok++; }
+  return { cf, poly, maxRel, okPct: 100 * ok / N, samePct: 100 * same / N };
+})();
+SCENES.exp2 = {
+  title: 'Software exp: 2^x = 2^⌊x⌋ × 2^(x − ⌊x⌋)', H: 580,
+  steps: [
+    'Split x into an integer part and a fractional part between 0 and 1',
+    'Integer part: no arithmetic — just write ⌊x⌋ into the float\'s exponent bits',
+    'Fractional part: a small cubic polynomial, evaluated with FMA instructions',
+    'Only a slice of the exponentials take this software path; the rest use the hardware unit'
+  ],
+  controls: [{ type: 'range', id: 'x', label: 'x', min: -6, max: 6, step: 0.01, value: 3.37, fmt: v => (+v).toFixed(2) }],
+  dur: 1.2,
+  draw(g, S) {
+    const st = S.step, x = S.v.x, fl = Math.floor(x), fr = x - fl, val = 2 ** x;
+    g.math(`2^{${x.toFixed(2)}} = 2^{${fl}} × 2^{${fr.toFixed(2)}} = ${(2 ** fl).toString().slice(0, 8)} × ${(2 ** fr).toFixed(4)} = ${val.toPrecision(5)}`, 500, 42, { size: 30, align: 'center' });
+    // number line
+    const NX0 = 80, NX1 = 920, NY = 120, X = v => lerp(NX0, NX1, (v + 6) / 12);
+    g.arrow(NX0 - 10, NY, NX1 + 15, NY, { lw: 1.6 });
+    for (let k = -6; k <= 6; k++) { g.line(X(k), NY - 6, X(k), NY + 6); g.text(String(k), X(k), NY + 20, { size: 12, align: 'center', color: C.muted }); }
+    g.rect(X(fl), NY - 14, X(x) - X(fl), 28, { fill: 'rgba(21,128,61,.18)', stroke: C.green, r: 4 });
+    g.circle(X(x), NY, 7, { fill: C.purple });
+    g.circle(X(fl), NY, 5, { fill: C.orange });
+    g.text(`⌊x⌋ = ${fl}`, X(fl), NY - 26, { size: 13, align: 'center', color: C.orange, weight: 700 });
+    g.text(`fraction ${fr.toFixed(2)}`, (X(fl) + X(x)) / 2, NY + 38, { size: 12, align: 'center', color: C.green, weight: 700 });
+    // bits
+    g.alpha(Math.max(0.25, S.at(1)) * (st === 3 ? 0 : 1), () => {
+      const f32 = new Float32Array([val]), bits = new Uint32Array(f32.buffer)[0];
+      g.text('float32 bits of the result', 40, 200, { size: 14, weight: 700 });
+      for (let i = 0; i < 32; i++) {
+        const bit = (bits >>> (31 - i)) & 1, kind = i === 0 ? 0 : i < 9 ? 1 : 2;
+        const col = [C.muted, C.orange, C.green][kind];
+        const xx = 40 + i * 13.5 + (i >= 1 ? 6 : 0) + (i >= 9 ? 6 : 0);
+        g.rect(xx, 216, 12, 24, { fill: kind === 1 ? '#ffedd5' : kind === 2 ? '#f0fdf4' : '#f3f4f6', stroke: col, lw: 1 });
+        g.mono(String(bit), xx + 6, 229, { size: 10, align: 'center', color: col });
+      }
+      g.text('sign', 46, 254, { size: 11, color: C.muted, align: 'center' });
+      g.text(`exponent = ⌊x⌋ + 127 = ${fl + 127}`, 120, 254, { size: 12, color: C.orange, weight: 700 });
+      g.text('mantissa ← from 2^fraction', 300, 254, { size: 12, color: C.green, weight: 700 });
+      g.text('Integer part: shift ⌊x⌋ into the exponent field.', 40, 296, { size: 14 });
+      g.text('No multiply, no exp unit needed.', 40, 318, { size: 14, color: C.muted });
+    });
+    // polynomial plot
+    g.alpha(Math.max(0.2, S.at(2)), () => {
+      const PX = 560, PY = 200, PW = 400, PH = 220;
+      g.rect(PX, PY, PW, PH, { fill: '#fff', stroke: C.faint, r: 8 });
+      const px = f => PX + 30 + f * (PW - 50), py = y => PY + PH - 30 - (y - 1) * (PH - 50);
+      g.line(px(0), py(1), px(1), py(1), { color: C.faint }); g.line(px(0), py(1), px(0), py(2), { color: C.faint });
+      g.text('0', px(0), py(1) + 14, { size: 11, align: 'center', color: C.muted }); g.text('1', px(1), py(1) + 14, { size: 11, align: 'center', color: C.muted });
+      const tru = [], pol = [];
+      for (let i = 0; i <= 60; i++) { const f = i / 60; tru.push([px(f), py(2 ** f)]); pol.push([px(f), py(EXP2.poly(f))]); }
+      g.poly(tru, { color: C.green, lw: 5 }); g.poly(pol, { color: C.purple, lw: 2, dash: [6, 4] });
+      g.circle(px(fr), py(2 ** fr), 6, { fill: C.purple });
+      g.text('2^f (true)', PX + 40, PY + 22, { size: 12, color: C.green, weight: 700 });
+      g.text('cubic (dashed)', PX + 130, PY + 22, { size: 12, color: C.purple, weight: 700 });
+      const c = EXP2.cf.map(v => v.toFixed(4));
+      g.mono(`p(f) = ((${c[3]}·f + ${c[2]})·f + ${c[1]})·f + ${c[0]}`, PX, PY + PH + 22, { size: 11 });
+      g.text(`3 FMAs · max relative error ${(EXP2.maxRel * 1e4).toFixed(1)}×10⁻⁴ (this fit)`, PX, PY + PH + 44, { size: 12, color: C.purple, weight: 700 });
+      g.text(`after BF16 rounding: identical for ${EXP2.samePct.toFixed(1)}%, within 1 ulp for ${EXP2.okPct.toFixed(1)}% of f in [0,1)`, PX, PY + PH + 64, { size: 12, color: C.muted });
+    });
+    g.alpha(S.at(3), () => {
+      g.text('exponentials in one tile row-block', 40, 200, { size: 14, weight: 700 });
+      for (let i = 0; i < 128; i++) {
+        const sw = (i * 37) % 128 < 18;
+        g.rect(40 + (i % 16) * 28, 216 + Math.floor(i / 16) * 28, 24, 24, { fill: sw ? '#c4b5fd' : '#fde68a', stroke: sw ? C.purple : C.gold, lw: 1, r: 3 });
+      }
+      g.rect(40, 452, 14, 14, { fill: '#fde68a', stroke: C.gold }); g.text('hardware exp unit (MUFU)', 60, 459, { size: 12 });
+      g.rect(250, 452, 14, 14, { fill: '#c4b5fd', stroke: C.purple }); g.text('FMA polynomial (~14% here)', 270, 459, { size: 12 });
+      g.text('Paper: roughly 10–25% emulated in software. Doing all of them would add', 40, 492, { size: 12, color: C.muted });
+      g.text('register pressure and could make the kernel slower.', 40, 510, { size: 12, color: C.muted });
+    });
+    g.text('Illustrative least-squares fit computed in this page — not the paper\'s exact coefficients.', 500, 568, { size: 11, align: 'center', color: C.muted });
+  }
+};
+
+/* ---------- Part 11: conditional rescaling ---------- */
+const RMX = [2.0, 2.6, 3.1, 3.0, 4.2, 4.5, 5.1, 5.0, 6.2, 7.4, 9.6, 9.8, 10.4, 12.6, 12.7, 13.1];
+SCENES.rescale = {
+  title: 'Conditional rescaling: only fix the reference max when it jumps by more than τ', H: 540,
+  steps: [
+    'The running max (log₂ units) creeps upward as tiles arrive',
+    'Classic online softmax: rescale l and u every time the max increases',
+    'FA4: keep the old reference max until the new max exceeds it by more than τ = 8 (a factor of 256)',
+    'Values e^(s − ref) stay ≤ 2^τ — safe in FP32. l and u share one reference, so O = u / l is still exact'
+  ],
+  controls: [{ type: 'range', id: 'tau', label: 'threshold τ (log₂)', min: 0, max: 12, step: 0.5, value: 8 }],
+  dur: 1.4,
+  draw(g, S) {
+    const st = S.step, tau = S.v.tau, X0 = 90, X1 = 930, Y0 = 430, Y1 = 70;
+    const X = i => lerp(X0, X1, i / 15), Y = v => lerp(Y0, Y1, v / 16);
+    g.arrow(X0, Y0, X1 + 30, Y0, { lw: 2 }); g.arrow(X0, Y0, X0, Y1 - 20, { lw: 2 });
+    for (let i = 0; i < 16; i++) g.text(String(i + 1), X(i), Y0 + 18, { size: 12, align: 'center', color: C.muted });
+    for (let v = 0; v <= 16; v += 4) { g.text(String(v), X0 - 10, Y(v), { size: 12, align: 'right', color: C.muted }); g.line(X0, Y(v), X1, Y(v), { color: '#ecebe6' }); }
+    g.text('K/V tile', (X0 + X1) / 2, Y0 + 40, { size: 13, align: 'center' });
+    g.text('running max (log₂ units)', X0, Y1 - 34, { size: 13, color: C.muted });
+    const run = []; let m = -1e9; RMX.forEach(v => { m = Math.max(m, v); run.push(m); });
+    const nShow = Math.max(1, Math.round(16 * S.at(0)));
+    g.poly(run.slice(0, nShow).map((v, i) => [X(i), Y(v)]), { color: C.ink, lw: 3 });
+    run.slice(0, nShow).forEach((v, i) => g.circle(X(i), Y(v), 4.5, { fill: C.ink }));
+    let classic = 0;
+    if (st >= 1) run.forEach((v, i) => { if (i > 0 && v > run[i - 1]) { classic++; g.alpha(S.at(1), () => { g.line(X(i), Y(v) - 10, X(i), Y(v) - 28, { color: C.red, lw: 3 }); }); } });
+    let fa = 0, ref = run[0]; const refPts = [[X(0), Y(ref)]];
+    run.forEach((v, i) => { if (i > 0 && v - ref > tau) { refPts.push([X(i), Y(ref)]); ref = v; fa++; refPts.push([X(i), Y(ref)]); } });
+    refPts.push([X(15), Y(ref)]);
+    g.alpha(S.at(2), () => {
+      for (let k = 0; k + 1 < refPts.length; k += 2) { const [xa, ya] = refPts[k], xb = refPts[k + 1][0]; const r0 = 16 * (Y0 - ya) / (Y0 - Y1); g.rect(xa, Y(Math.min(16, r0 + tau)), xb - xa, ya - Y(Math.min(16, r0 + tau)), { fill: 'rgba(21,128,61,.08)' }); }
+      g.poly(refPts, { color: C.green, lw: 4 });
+      let r2 = run[0]; run.forEach((v, i) => { if (i > 0 && v - r2 > tau) { r2 = v; g.circle(X(i), Y(v), 10, { stroke: C.green, lw: 3 }); } });
+    });
+    g.rect(130, 175, 340, 104, { fill: '#fff', stroke: C.ink, r: 10 });
+    g.alpha(S.at(1), () => g.text(`classic: ${classic} rescales`, 150, 203, { size: 18, weight: 800, color: C.red, font: FONT.head }));
+    g.alpha(S.at(2), () => g.text(`FA4 (τ = ${tau}): ${fa} rescale${fa === 1 ? '' : 's'}`, 150, 235, { size: 18, weight: 800, color: C.green, font: FONT.head }));
+    g.alpha(S.at(2), () => g.text(`green line = reference max · shaded = ref … ref + τ`, 150, 263, { size: 12, color: C.muted }));
+    g.alpha(S.at(3), () => {
+      g.rect(130, 80, 440, 74, { fill: '#fff', stroke: C.green, r: 10, lw: 2 });
+      g.text(`e^(s − ref) ≤ 2^τ = ${2 ** tau} → no overflow in FP32`, 350, 106, { size: 15, weight: 700, align: 'center' });
+      g.text('Final O = u / l uses the same reference: still exact', 350, 132, { size: 14, align: 'center', color: C.green });
+    });
+  }
+};
+
+/* ---------- Part 11: 2-CTA backward ---------- */
+SCENES.twocta = {
+  title: 'Backward pass: 2-CTA MMA halves redundant shared-memory staging', H: 540,
+  steps: [
+    'The backward pass is matmul-heavy — and its shared-memory traffic becomes the bottleneck',
+    '1-CTA: each thread block stages the WHOLE shared operand in its own SMEM — twice the traffic',
+    '2-CTA: a pair of CTAs cooperates on one bigger MMA — each stages only half of the operand',
+    'Paper\'s analysed configuration: SMEM time ~30% above MMA time (1-CTA) vs ~5% above (2-CTA)'
+  ],
+  dur: 1.2,
+  draw(g, S) {
+    const st = S.step;
+    g.alpha(Math.max(S.at(0), 0.3) * (st >= 1 ? 0.35 : 1), () => {
+      g.text('backward matmuls (per tile)', 40, 40, { size: 14, weight: 700 });
+      ['dV = Pᵀ · dO', 'dP = dO · Vᵀ', 'dS = P ∘ (dP − D)', 'dQ = dS · K', 'dK = dSᵀ · Q'].forEach((s, i) => g.mono(s, 40 + i * 190, 72, { size: 14, color: i === 3 ? C.red : C.ink }));
+    });
+    const cta = (x, y, lab, opnd, half, col) => {
+      g.box(x, y, 190, 150, lab, { fill: '#fff', stroke: col, tsize: 14 });
+      g.rect(x + 15, y + 40, 75, 90, { fill: C.orangeL, stroke: C.orange, r: 5 }); g.text('A (own)', x + 52, y + 85, { size: 12, align: 'center', weight: 700 });
+      g.rect(x + 100, y + 40, 75, half ? 45 : 90, { fill: opnd, stroke: C.blue, r: 5 }); g.text(half ? 'B half' : 'B (full)', x + 137, y + (half ? 62 : 85), { size: 12, align: 'center', weight: 700 });
+      g.text('SMEM', x + 95, y + 145, { size: 11, align: 'center', color: C.muted });
+    };
+    g.alpha(S.at(1), () => {
+      g.text('1-CTA', 230, 120, { size: 18, weight: 800, align: 'center', font: FONT.head, color: C.red });
+      cta(30, 140, 'CTA 0', C.redL, false, C.ink); cta(240, 140, 'CTA 1', C.redL, false, C.ink);
+      g.hand('B staged twice', 230, 318, { color: C.red, size: 26, align: 'center' });
+    });
+    g.alpha(S.at(2), () => {
+      g.text('2-CTA pair', 760, 120, { size: 18, weight: 800, align: 'center', font: FONT.head, color: C.green });
+      g.rect(550, 132, 420, 170, { stroke: C.green, lw: 2.5, r: 14, dash: [6, 4] });
+      cta(560, 140, 'CTA 0', C.blueL, true, C.ink); cta(770, 140, 'CTA 1', C.blueL, true, C.ink);
+      const t = (S.t * 0.8) % 1;
+      g.curve(697, 178, 802, 112, 907, 178, { color: C.green, lw: 2 }); g.curve(907, 178, 802, 112, 697, 178, { color: C.green, lw: 0.01 });
+      const bt = t, bx = (1 - bt) * (1 - bt) * 697 + 2 * (1 - bt) * bt * 802 + bt * bt * 907, by = (1 - bt) * (1 - bt) * 178 + 2 * (1 - bt) * bt * 112 + bt * bt * 178;
+      g.circle(bx, by, 4.5, { fill: C.green });
+      g.hand('each CTA stages half — tensor cores read across the pair', 760, 318, { color: C.green, size: 19, align: 'center' });
+    });
+    g.alpha(S.at(3), () => {
+      const bx = 230, by = 380, U = 300;
+      const bar = (y, lab, smem, col) => {
+        g.text(lab, bx - 12, y + 20, { size: 14, weight: 800, align: 'right', color: col });
+        g.rect(bx, y, U, 16, { fill: '#fde68a', stroke: C.gold, r: 4 }); g.text('MMA time', bx + U + 8, y + 8, { size: 11, color: C.gold });
+        g.rect(bx, y + 22, U * smem * S.at(3), 16, { fill: mix('#ffffff', col, .45), stroke: col, r: 4 }); g.text(`SMEM ≈ ${Math.round(smem * 100)}% of MMA`, bx + U * smem + 8, y + 30, { size: 11, color: col, weight: 700 });
+      };
+      bar(by, '1-CTA', 1.3, C.red); bar(by + 70, '2-CTA', 1.05, C.green);
+      g.text('Also: restructured dQ with fewer atomic reductions.  Numbers describe the paper\'s analysed config only.', 500, 525, { size: 12, align: 'center', color: C.muted });
+    });
+  }
+};
+
+/* =====================================================================
+   SCENES 4 — benchmark plotter, Flash-Decoding, recap
+   ===================================================================== */
+
+/* ---------- generic line chart ---------- */
+function lineChart(g, x0, y0, w, h, xs, series, o = {}) {
+  const prog = o.prog ?? 1, xlog = o.xlog, ylog = o.ylog;
+  const allY = series.flatMap(s => s.ys).filter(v => isFinite(v) && (!ylog || v > 0));
+  if (!xs.length || !allY.length) return;
+  let ymin = o.y0 ?? (ylog ? Math.min(...allY) : 0), ymax = Math.max(...allY);
+  if (ylog) { ymin = Math.pow(10, Math.floor(Math.log10(ymin))); ymax = Math.pow(10, Math.ceil(Math.log10(ymax))); } else ymax *= 1.1;
+  const xmin = Math.min(...xs), xmax = Math.max(...xs);
+  const fx = v => xlog ? Math.log2(v) : v, fy = v => ylog ? Math.log10(v) : v;
+  const X = v => x0 + (xmax === xmin ? w / 2 : (fx(v) - fx(xmin)) / (fx(xmax) - fx(xmin)) * w);
+  const Y = v => y0 + h - (fy(v) - fy(ymin)) / ((fy(ymax) - fy(ymin)) || 1) * h;
+  g.arrow(x0, y0 + h, x0 + w + 20, y0 + h, { lw: 1.6 }); g.arrow(x0, y0 + h, x0, y0 - 16, { lw: 1.6 });
+  xs.forEach(v => { g.line(X(v), y0 + h, X(v), y0 + h + 5); g.text(String(v), X(v), y0 + h + 18, { size: 11, align: 'center', color: C.muted }); });
+  const ticks = ylog ? (() => { const t = []; for (let e = Math.log10(ymin); e <= Math.log10(ymax) + 1e-9; e++) t.push(10 ** e); return t; })() : [0, .25, .5, .75, 1].map(f => ymin + f * (ymax - ymin));
+  ticks.forEach(v => { g.line(x0, Y(v), x0 + w, Y(v), { color: '#ecebe6' }); g.text(v >= 100 ? v.toFixed(0) : v >= 1 ? v.toFixed(1) : v.toPrecision(2), x0 - 8, Y(v), { size: 11, align: 'right', color: C.muted }); });
+  if (o.xlabel) g.text(o.xlabel, x0 + w / 2, y0 + h + 40, { size: 13, align: 'center' });
+  if (o.ylabel) g.text(o.ylabel, x0, y0 - 30, { size: 13, color: C.muted });
+  const cols = [C.red, C.green, C.blue, C.purple, C.orange, C.teal];
+  series.forEach((s, k) => {
+    const pts = []; const n = xs.length;
+    for (let i = 0; i < n; i++) { if (!isFinite(s.ys[i]) || (ylog && s.ys[i] <= 0)) continue; if (i / Math.max(1, n - 1) > prog + 1e-6) break; pts.push([X(xs[i]), Y(s.ys[i])]); }
+    g.poly(pts, { color: cols[k % cols.length], lw: 3 });
+    pts.forEach(p => g.circle(p[0], p[1], 4, { fill: cols[k % cols.length] }));
+    g.rect(x0 + w - 200, y0 + k * 22 - 4, 14, 4, { fill: cols[k % cols.length] });
+    g.text(s.name, x0 + w - 180, y0 + k * 22 - 2, { size: 12, weight: 700, color: cols[k % cols.length] });
+  });
+}
+function parseCSV(txt) {
+  const lines = (txt || '').trim().split(/\r?\n/).map(l => l.trim()).filter(l => l && !l.startsWith('#'));
+  if (lines.length < 2) return null;
+  const head = lines[0].split(',').map(s => s.trim());
+  const rows = lines.slice(1).map(l => l.split(',').map(s => parseFloat(s)));
+  return { head, xs: rows.map(r => r[0]), col: i => rows.map(r => r[i]) };
+}
+const BENCH_FIELDS = [['gpu', 'GPU'], ['batch', 'Batch size'], ['heads', 'Heads'], ['seq', 'Sequence lengths'], ['hd', 'Head dimension'], ['dtype', 'Dtype'], ['mask', 'Mask'], ['warm', 'Warm-up iterations'], ['iters', 'Measured iterations'], ['stat', 'Statistic']];
+const store = { get(k) { try { return localStorage.getItem('fa-lecture-' + k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem('fa-lecture-' + k, v); } catch (e) { } } };
+SCENES.benchplot = {
+  title: 'Your benchmark — plotted from your own measurements', H: 520,
+  steps: [
+    'Benchmark configuration (fill in the boxes below)',
+    'Latency vs sequence length',
+    'Peak allocated memory vs sequence length',
+    'Speed-up relative to the materialised baseline',
+    'Throughput vs batch size'
+  ],
+  dur: 1.4,
+  panel(stage) {
+    const st = stage.state; const d = document.createElement('div'); d.className = 'bench-panel';
+    st.cfg = {}; BENCH_FIELDS.forEach(([k]) => st.cfg[k] = store.get('cfg-' + k) || '');
+    st.seq = store.get('seq') || ''; st.bat = store.get('bat') || '';
+    d.innerHTML = `
+      <div class="bench-cfg">${BENCH_FIELDS.map(([k, l]) => `<label><span>${l}</span><input data-k="${k}" placeholder="insert" value="${(st.cfg[k] || '').replace(/"/g, '&quot;')}"></label>`).join('')}</div>
+      <div class="bench-csv">
+        <label><span>Sequence-length results (CSV — first column = seq_len; columns ending in <code>_ms</code> = latency, <code>_mb</code> = memory)</span>
+        <textarea data-t="seq" rows="6" placeholder="seq_len,naive_ms,flash_ms,naive_mb,flash_mb&#10;(paste the output of your benchmark run here)">${st.seq}</textarea></label>
+        <label><span>Batch-size results (CSV — first column = batch; other columns = throughput)</span>
+        <textarea data-t="bat" rows="6" placeholder="batch,naive_tok_s,flash_tok_s">${st.bat}</textarea></label>
+      </div>
+      <p class="bench-note">Nothing here is pre-filled: the plots only show numbers you paste from your own run. Values are remembered in this browser.</p>`;
+    d.querySelectorAll('input[data-k]').forEach(i => i.oninput = () => { st.cfg[i.dataset.k] = i.value; store.set('cfg-' + i.dataset.k, i.value); });
+    d.querySelectorAll('textarea').forEach(t => t.oninput = () => { st[t.dataset.t] = t.value; store.set(t.dataset.t, t.value); });
+    return d;
+  },
+  draw(g, S) {
+    const st = S.step, sv = S.state;
+    if (st === 0) {
+      g.text('Benchmark configuration', 80, 50, { size: 22, weight: 800, font: FONT.head });
+      BENCH_FIELDS.forEach(([k, l], i) => {
+        const y = 95 + i * 38, v = (sv.cfg && sv.cfg[k]) || '[insert]';
+        g.text(l + ':', 330, y, { size: 17, align: 'right', color: C.muted });
+        g.text(v, 350, y, { size: 18, weight: 700, color: v === '[insert]' ? C.red : C.ink, font: FONT.mono });
+      });
+      g.hand('same shapes · same dtype · warm-up · median', 700, 470, { color: C.purple, size: 24, align: 'center' });
+      return;
+    }
+    const empty = msg => { g.rect(150, 150, 700, 200, { fill: '#fff', stroke: C.faint, r: 14, dash: [8, 6] }); g.text(msg, 500, 230, { size: 18, weight: 700, align: 'center', color: C.muted }); g.text('Paste your measured CSV in the box below this animation', 500, 265, { size: 15, align: 'center', color: C.muted }); };
+    if (st <= 3) {
+      const d = parseCSV(sv.seq); if (!d) return empty('No data yet');
+      const ms = d.head.map((h, i) => [h, i]).filter(([h, i]) => i > 0 && /_ms$/i.test(h));
+      const mb = d.head.map((h, i) => [h, i]).filter(([h, i]) => i > 0 && /_(mb|mib|gb)$/i.test(h));
+      const prog = S.at(st);
+      if (st === 1) { if (!ms.length) return empty('No *_ms columns found'); lineChart(g, 110, 70, 800, 340, d.xs, ms.map(([h, i]) => ({ name: h, ys: d.col(i) })), { xlog: true, ylog: true, prog, xlabel: d.head[0], ylabel: 'latency (ms, log scale)' }); }
+      if (st === 2) { if (!mb.length) return empty('No *_mb columns found'); lineChart(g, 110, 70, 800, 340, d.xs, mb.map(([h, i]) => ({ name: h, ys: d.col(i) })), { xlog: true, ylog: true, prog, xlabel: d.head[0], ylabel: 'peak allocated memory (log scale) — not HBM traffic' }); }
+      if (st === 3) {
+        if (ms.length < 2) return empty('Need at least two *_ms columns');
+        const base = d.col(ms[0][1]);
+        lineChart(g, 110, 70, 800, 340, d.xs, ms.slice(1).map(([h, i]) => ({ name: h + ' vs ' + ms[0][0], ys: d.col(i).map((v, k) => base[k] / v) })), { xlog: true, prog, xlabel: d.head[0], ylabel: `speed-up (× faster than ${ms[0][0]})` });
+      }
+    } else {
+      const d = parseCSV(sv.bat); if (!d) return empty('No batch data yet');
+      lineChart(g, 110, 70, 800, 340, d.xs, d.head.slice(1).map((h, i) => ({ name: h, ys: d.col(i + 1) })), { prog: S.at(4), xlabel: d.head[0], ylabel: 'throughput' });
+    }
+    g.text('Report the measured result for this GPU and these shapes. No crossover point is universal.', 500, 505, { size: 12, align: 'center', color: C.muted });
+  }
+};
+
+/* ---------- 12.4 decode and Flash-Decoding ---------- */
+SCENES.decode = {
+  title: 'Decode: one query row, a long KV cache → split the KV cache (Flash-Decoding)', H: 600,
+  steps: [
+    'Prefill: many query rows → split work across query blocks.  Decode: one new query row',
+    'The KV cache is long — split it into chunks',
+    'Each worker processes one chunk in parallel → a partial state (m_j, l_j, u_j)',
+    'Merge with the online-softmax rule: rescale each partial state to the global max, then add',
+    'O = u / l — exactly the same as attending over the whole cache at once'
+  ],
+  dur: [1.2, 1.2, 1.8, 1.6, 1.0],
+  draw(g, S) {
+    const D = DATA, st = S.step;
+    // prefill vs decode
+    g.alpha(st === 0 ? 1 : 0.25, () => {
+      g.text('PREFILL', 60, 40, { size: 15, weight: 800, color: C.purple });
+      g.matrix(60, 56, 8, 4, { cs: 7, gap: 2, fill: C.q });
+      g.text('many query rows', 110, 90, { size: 13 });
+      g.text('DECODE', 300, 40, { size: 15, weight: 800, color: C.blue });
+      g.matrix(300, 56, 1, 4, { cs: 7, gap: 2, fill: C.q });
+      g.text('1 query row + long KV cache', 300, 82, { size: 13 });
+    });
+    // KV cache row
+    const tx = i => 70 + i * 55 + Math.floor(i / 4) * 8;
+    g.hand('q  (1 new token)', 500, 140, { color: C.orange, size: 28, align: 'center' });
+    g.matrix(430, 156, 1, 8, { cs: 15, gap: 3, fill: C.q });
+    g.text('KV cache', 30, 210, { size: 13, weight: 700, align: 'left' });
+    for (let i = 0; i < 16; i++) {
+      const j = Math.floor(i / 4);
+      g.rect(tx(i), 222, 48, 18, { fill: C.k, stroke: st >= 1 ? TILE[j] : C.ink, lw: st >= 1 ? 1.6 : 1, r: 2 });
+      g.rect(tx(i), 243, 48, 18, { fill: '#9be3a6', stroke: st >= 1 ? TILE[j] : C.ink, lw: st >= 1 ? 1.6 : 1, r: 2 });
+      g.text('t' + (i + 1), tx(i) + 24, 274, { size: 10, align: 'center', color: C.muted });
+    }
+    g.alpha(S.at(1), () => { for (let j = 0; j < 4; j++) { g.rect(tx(4 * j) - 4, 216, 4 * 55 - 3, 50, { stroke: TILE[j], lw: 2.5, r: 6 }); g.text('chunk ' + (j + 1), tx(4 * j) + 106, 296, { size: 13, weight: 700, align: 'center', color: TILE[j] }); } });
+    // partial states
+    const parts = [0, 1, 2, 3].map(j => {
+      const sj = D.s.slice(4 * j, 4 * j + 4), m = Math.max(...sj), P = sj.map(x => Math.exp(x - m));
+      return { m, l: sum(P), u: V0(P, j) };
+    });
+    function V0(P, j) { return D.V[0].map((_, d) => sum(P.map((p, t) => p * D.V[4 * j + t][d]))); }
+    if (st >= 2) {
+      const f = S.tl(2, 1.6);
+      for (let j = 0; j < 4; j++) {
+        const x = tx(4 * j) - 4, y = 315;
+        g.rect(x, y, 4 * 55 - 3, 110, { fill: '#fff', stroke: TILE[j], lw: 2, r: 10 });
+        g.text('worker ' + (j + 1), x + 12, y + 18, { size: 13, weight: 800, color: TILE[j] });
+        g.rect(x + 12, y + 30, (4 * 55 - 27) * f, 6, { fill: TILE[j], r: 3 });
+        g.alpha(seg(f, 0.6, 1), () => {
+          g.mono(`m${j + 1} = ${fmt(parts[j].m)}`, x + 12, y + 55, { size: 13 });
+          g.mono(`l${j + 1} = ${fmt(parts[j].l, 3)}`, x + 12, y + 77, { size: 13 });
+          g.mono(`u${j + 1} = [${fmt(parts[j].u[0])}, …]`, x + 12, y + 99, { size: 13 });
+        });
+        if (f < 1) g.line(500, 172, tx(4 * j) + 106, 218, { color: TILE[j], lw: 1.5, dash: [4, 4] });
+      }
+    }
+    if (st >= 3) {
+      const M = Math.max(...parts.map(p => p.m));
+      const L = sum(parts.map(p => Math.exp(p.m - M) * p.l));
+      const U = parts.reduce((a, p) => vadd(a, vscale(p.u, Math.exp(p.m - M))), new Array(8).fill(0));
+      const O = vscale(U, 1 / L);
+      g.alpha(S.at(3), () => {
+        g.rect(60, 445, 880, st >= 4 ? 140 : 110, { fill: '#fff', stroke: C.purple, r: 12, lw: 2 });
+        g.math('m = max_j m_j     l = Σ_j e^{m_j − m} l_j     u = Σ_j e^{m_j − m} u_j', 500, 475, { size: 25, align: 'center' });
+        g.text(`m = ${fmt(M)}   ·   l = ${fmt(L, 3)}   ·   scale factors: ${parts.map(p => fmt(Math.exp(p.m - M), 2)).join(', ')}`, 500, 510, { size: 14, align: 'center', font: FONT.mono });
+      });
+      g.alpha(S.at(4), () => {
+        g.text('O = u / l', 90, 554, { size: 15, weight: 800, color: C.purple });
+        g.vec(O, 170, 540, { cw: 46, ch: 26, size: 11, fill: C.purpleL });
+        const diff = Math.max(...O.map((x, i) => Math.abs(x - D.O[i])));
+        g.check(570, 553, 28);
+        g.text(`= full attention (max diff ${diff.toExponential(1)})`, 595, 554, { size: 14, weight: 700, color: C.green });
+      });
+    }
+  }
+};
+
+/* ---------- Part 13 recap ---------- */
+SCENES.recap = {
+  title: 'Four generations, four bottleneck stories', H: 560,
+  steps: [
+    'FA1: too much HBM I/O and N × N intermediates → tiling + online softmax + fusion',
+    'FA2: not enough parallel work → Q blocks outside, better warp split, fewer non-matmul ops',
+    'FA3 (Hopper): idle gaps between loads, matmul, softmax → TMA + WGMMA + warp specialisation + FP8',
+    'FA4 (Blackwell): matmul outran exp and SMEM → TMEM, ping-pong, software exp, conditional rescale, 2-CTA',
+    'Same attention problem. Different bottlenecks. Better schedules for the hardware.'
+  ],
+  dur: 1.2,
+  draw(g, S) {
+    const st = S.step, t = S.t;
+    const cards = [
+      ['FA1', 'IO-aware attention', 'Excessive HBM I/O, N×N intermediates', 'Tiling + online softmax + fusion'],
+      ['FA2', 'Ampere era', 'Too little parallelism, poor work split', 'Q blocks outer, better warp split'],
+      ['FA3', 'Hopper', 'Gaps between load, MMA, softmax', 'TMA + WGMMA + warp spec. + FP8'],
+      ['FA4', 'Blackwell', 'Asymmetric scaling: exp & SMEM bottleneck', 'TMEM, ping-pong, soft-exp, rescale, 2-CTA']
+    ];
+    g.line(110, 70, 890, 70, { color: C.faint, lw: 4 });
+    g.line(110, 70, lerp(110, 890, clamp((st + S.p) / 4)), 70, { color: C.purple, lw: 4 });
+    cards.forEach((cd, i) => {
+      const cx = 140 + i * 240, a = S.at(i), on = st === i;
+      g.circle(cx, 70, on ? 16 : 12, { fill: a > 0 ? TILE[i] : '#fff', stroke: TILE[i], lw: 3 });
+      g.alpha(Math.max(0.15, a), () => {
+        g.rect(cx - 110, 105, 220, 330, { fill: on ? TILE_L[i] : '#fff', stroke: TILE[i], lw: on ? 3 : 1.5, r: 14 });
+        g.text(cd[0], cx, 135, { size: 28, weight: 800, align: 'center', font: FONT.head, color: TILE[i] });
+        g.text(cd[1], cx, 160, { size: 13, align: 'center', color: C.muted });
+        // icon
+        const iy = 180;
+        if (i === 0) { g.rect(cx - 60, iy, 50, 50, { fill: '#cdbff3', stroke: C.ink }); g.cross(cx - 35, iy + 25, 40, { lw: 3 }); g.rect(cx + 15, iy + 15, 20, 20, { fill: '#cdbff3', stroke: C.ink }); g.circle(cx + 25, iy + 25, 22 + 3 * Math.sin(t * 3), { stroke: C.green, lw: 2 }); }
+        if (i === 1) for (let k = 0; k < 12; k++) g.rect(cx - 60 + (k % 6) * 20, iy + Math.floor(k / 6) * 24 + 4, 16, 18, { fill: (k + Math.floor(t * 4)) % 12 < (a > 0.5 ? 12 : 3) ? '#86efac' : '#e5e7eb', r: 3 });
+        if (i === 2) { const o = 10 * Math.sin(t * 2); g.rect(cx - 70, iy + 6, 90, 14, { fill: '#93c5fd', r: 4 }); g.rect(cx - 40 + o, iy + 26, 90, 14, { fill: '#fdba74', r: 4 }); g.rect(cx - 10 + o, iy + 46, 80, 14, { fill: '#c4b5fd', r: 4 }); }
+        if (i === 3) { g.rect(cx - 50, iy + 60 - 56, 30, 56, { fill: '#fdba74', r: 3 }); g.rect(cx - 10, iy + 60 - 28, 30, 28, { fill: '#c4b5fd', r: 3 }); g.rect(cx + 30, iy + 60 - 28, 30, 28, { fill: '#86efac', r: 3 }); g.text('MMA  exp  SMEM', cx + 5, iy + 72, { size: 10, align: 'center', color: C.muted }); }
+        g.text('Bottleneck', cx - 95, 280, { size: 12, weight: 800, color: C.muted });
+        g.wrap(cd[2], cx - 95, 300, 190, 19, { size: 14 });
+        g.text('Main idea', cx - 95, 362, { size: 12, weight: 800, color: C.muted });
+        g.wrap(cd[3], cx - 95, 382, 190, 19, { size: 14, weight: 700, color: TILE[i] });
+      });
+    });
+    g.alpha(S.at(4), () => {
+      g.rect(80, 455, 840, 90, { fill: '#fff', stroke: C.purple, lw: 2.5, r: 14 });
+      g.text('When a GPU workload is slow, don\'t only ask how to reduce the operations.', 500, 485, { size: 17, align: 'center' });
+      g.text('Ask where the data lives, how often it moves, and which part of the GPU is waiting.', 500, 515, { size: 17, weight: 800, align: 'center', color: C.purple });
+    });
+  }
+};
+
+/* =====================================================================
+   PAGE — navigation, view modes, font size, copy buttons
+   ===================================================================== */
+(function () {
+  const start = () => {
+    initStages();
+    // view modes
+    document.querySelectorAll('.modes button').forEach(b => b.onclick = () => {
+      document.querySelectorAll('.modes button').forEach(x => x.classList.toggle('on', x === b));
+      document.body.classList.remove('m-anim', 'm-theory');
+      if (b.dataset.mode !== 'both') document.body.classList.add('m-' + b.dataset.mode);
+    });
+    // theory text size
+    let fs = 19;
+    try { fs = +localStorage.getItem('fa-lecture-fs') || 19; } catch (e) { }
+    const setFs = v => { fs = Math.max(15, Math.min(28, v)); document.documentElement.style.setProperty('--say-size', fs + 'px'); try { localStorage.setItem('fa-lecture-fs', fs); } catch (e) { } };
+    setFs(fs);
+    document.querySelectorAll('.fsz button').forEach(b => b.onclick = () => setFs(fs + (+b.dataset.f)));
+    // mobile menu
+    document.querySelector('.menu').onclick = () => document.body.classList.toggle('nav-open');
+    document.querySelectorAll('.side a').forEach(a => a.addEventListener('click', () => document.body.classList.remove('nav-open')));
+    // copy buttons
+    document.querySelectorAll('.code-card .copy').forEach(b => b.onclick = () => {
+      const code = b.closest('.code-card').querySelector('code').innerText;
+      const done = () => { b.textContent = 'Copied ✓'; setTimeout(() => b.textContent = 'Copy', 1500); };
+      if (navigator.clipboard) navigator.clipboard.writeText(code).then(done, () => { }); else done();
+    });
+    // nav highlight + progress
+    const links = [...document.querySelectorAll('.side a:not(.nav-sub)')];
+    const secs = links.map(a => document.getElementById(a.dataset.target)).filter(Boolean);
+    const bar = document.querySelector('.progress i');
+    const onScroll = () => {
+      const h = document.documentElement; bar.style.width = (100 * h.scrollTop / Math.max(1, h.scrollHeight - h.clientHeight)) + '%';
+      let cur = secs[0];
+      for (const s of secs) if (s.getBoundingClientRect().top < 140) cur = s;
+      links.forEach(a => a.classList.toggle('on', a.dataset.target === cur.id));
+    };
+    addEventListener('scroll', onScroll, { passive: true }); onScroll();
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start); else start();
+})();
+
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body,{delimiters:[{left:'\\[',right:'\\]',display:true}],throwOnError:false})"></script>
+</body>
+</html>
